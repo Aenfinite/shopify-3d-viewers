@@ -23,14 +23,16 @@ const FONT_OPTIONS = [
     id: "england",
     name: "England Hand DB",
     preview: "𝒜ℬ𝒞",
-    style: "font-serif italic",
+    style: "font-serif italic font-bold",
+    previewStyle: "font-family: 'Brush Script MT', 'Lucida Handwriting', cursive; font-style: italic; font-weight: bold;",
     description: "Elegant script font",
   },
   {
     id: "arial",
     name: "Arial",
     preview: "ABC",
-    style: "font-sans",
+    style: "font-sans font-semibold",
+    previewStyle: "font-family: Arial, sans-serif; font-weight: 600;",
     description: "Clean modern font",
   },
 ]
@@ -70,7 +72,7 @@ export function EmbroideredMonogramStep({
 
   const validateText = (text: string, type: "initials" | "fullname") => {
     if (type === "initials") {
-      return text.length <= 3
+      return text.length <= 2
     }
     return text.length <= 15
   }
@@ -80,9 +82,12 @@ export function EmbroideredMonogramStep({
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-2">
           <Type className="w-5 h-5 text-blue-600" />
-          <h3 className="font-medium text-blue-800">Embroidered Monogram Option</h3>
+          <h3 className="font-medium text-blue-800">Embroidered Monogram Option (Inside Left of Jacket)</h3>
         </div>
-        <p className="text-sm text-blue-700">Add a personal touch inside the jacket on the left side.</p>
+        <p className="text-sm text-blue-700">
+          Add a personalized touch to your jacket with our custom embroidered monogram. 
+          Choose from two elegant font styles — England Hand DB for a classic cursive look or Arial for a clean, modern feel.
+        </p>
       </div>
 
       {/* Enable/Disable Monogram */}
@@ -159,8 +164,8 @@ export function EmbroideredMonogramStep({
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-medium text-gray-900">Initials (2-3 letters)</h5>
-                      <p className="text-sm text-gray-600">Example: A.F. or J.D.S.</p>
+                      <h5 className="font-medium text-gray-900">Initials (2 letters)</h5>
+                      <p className="text-sm text-gray-600">Example: A.F.</p>
                     </div>
                     <Badge variant="outline" className="text-green-600 border-green-600">
                       USD $6.50
@@ -180,8 +185,8 @@ export function EmbroideredMonogramStep({
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h5 className="font-medium text-gray-900">Full Name (up to 15 letters)</h5>
-                      <p className="text-sm text-gray-600">Two words maximum</p>
+                      <h5 className="font-medium text-gray-900">Full Name (two words, up to 15 letters)</h5>
+                      <p className="text-sm text-gray-600">Perfect for adding a unique and personal element</p>
                     </div>
                     <Badge variant="outline" className="text-green-600 border-green-600">
                       USD $10.00
@@ -207,12 +212,12 @@ export function EmbroideredMonogramStep({
                     onUpdate({ monogramText: text })
                   }
                 }}
-                placeholder={monogramType === "initials" ? "A.F." : "JOHN DOE"}
-                maxLength={monogramType === "initials" ? 3 : 15}
+                placeholder={monogramType === "initials" ? "AF" : "JOHN DOE"}
+                maxLength={monogramType === "initials" ? 2 : 15}
                 className="text-center text-lg font-medium"
               />
               <p className="text-sm text-gray-500 mt-1 text-center">
-                {monogramText.length}/{monogramType === "initials" ? 3 : 15} characters
+                {monogramText.length}/{monogramType === "initials" ? 2 : 15} characters
               </p>
             </div>
           </div>
@@ -292,7 +297,17 @@ export function EmbroideredMonogramStep({
                 <div className="bg-white rounded-lg p-8 text-center border-2 border-dashed border-gray-300">
                   <div className="mb-4">
                     <div className="text-sm text-gray-600 mb-2">Inside Left Jacket</div>
-                    <div className={`text-4xl ${selectedFont.style}`} style={{ color: selectedThreadColor.color }}>
+                    <div 
+                      className="text-4xl"
+                      style={{ 
+                        color: selectedThreadColor.color,
+                        fontFamily: selectedFont.id === 'england' 
+                          ? "'Brush Script MT', 'Lucida Handwriting', cursive" 
+                          : "Arial, sans-serif",
+                        fontWeight: selectedFont.id === 'england' ? 'bold' : '600',
+                        fontStyle: selectedFont.id === 'england' ? 'italic' : 'normal'
+                      }}
+                    >
                       {monogramText}
                     </div>
                   </div>

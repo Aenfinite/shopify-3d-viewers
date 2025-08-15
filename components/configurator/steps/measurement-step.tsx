@@ -195,7 +195,7 @@ const GARMENT_MEASUREMENTS = {
         key: "neck",
         label: "Neck",
         description: "Measure around the base of your neck where the collar sits.",
-        detailedGuide: "Place the measuring tape around the base of your neck, just above your collar bone, where the jacket collar would naturally sit. Keep one finger between the tape and your neck for comfort.",
+        detailedGuide: "Stand upright and look straight ahead. Place the tape just below the larynx and wrap it horizontally around the neck where it meets the shoulders. Leave a finger’s width of space between the tape and the neck. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/8eTJzzDZ-Ps",
         sketchImage: "/images/jacket/image.png"
@@ -204,7 +204,7 @@ const GARMENT_MEASUREMENTS = {
         key: "chest",
         label: "Chest",
         description: "Measure around the fullest part of your chest, under your arms.",
-        detailedGuide: "Stand straight with arms at your sides. Measure around the fullest part of your chest, keeping the tape level and snug but not tight.",
+        detailedGuide: "Stand upright with arms relaxed and breathe normally. Position the tape across the fullest part of your chest, over the nipples, under the armpits, and around the shoulder blades. Keep the tape level. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/fN7ChyTlAS8",
         sketchImage: "/images/jacket/chest.png"
@@ -213,7 +213,7 @@ const GARMENT_MEASUREMENTS = {
         key: "waist",
         label: "Waist",
         description: "Measure around your natural waistline.",
-        detailedGuide: "Find your natural waist (usually the narrowest part) and measure around it, keeping the tape snug but not tight.",
+        detailedGuide: "Wrap the tape horizontally around your waist over the navel (or fullest part of the stomach if applicable). The tape should be snug but not tight. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/3xVdy8Azqhs",
         sketchImage: "/images/jacket/waist.png"
@@ -222,7 +222,7 @@ const GARMENT_MEASUREMENTS = {
         key: "hip",
         label: "Hip",
         description: "Measure around the fullest part of your hips.",
-        detailedGuide: "Stand with feet together and measure around the fullest part of your hips and buttocks.",
+        detailedGuide: "Stand upright, empty your pockets, and wrap the tape around the fullest part of your hips. Keep the tape level. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/DVy9E71T3cI",
         sketchImage: "/images/jacket/hem.png"
@@ -231,7 +231,7 @@ const GARMENT_MEASUREMENTS = {
         key: "biceps",
         label: "Biceps",
         description: "Measure around the largest part of your upper arm.",
-        detailedGuide: "Measure about 1 inch below the underarm, straight across the sleeve.",
+        detailedGuide: "With arms relaxed, wrap the tape around the fullest part of your upper arm without tensing the muscles. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/h5GvZbTVSH8",
         sketchImage: "/images/jacket/biceps.png"
@@ -240,7 +240,7 @@ const GARMENT_MEASUREMENTS = {
         key: "forearm",
         label: "Forearm",
         description: "Measure around the largest part of your forearm.",
-        detailedGuide: "Measure around the thickest part of your forearm, typically about 3-4 inches below the elbow.",
+        detailedGuide: "With arms relaxed, measure around the thickest part of your forearm without tensing. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/wkCAxhoaBgg",
         sketchImage: "/images/jacket/sleeve-opening.png"
@@ -249,7 +249,7 @@ const GARMENT_MEASUREMENTS = {
         key: "wrist",
         label: "Wrist",
         description: "Measure around your wrist bone.",
-        detailedGuide: "Measure around your wrist at the wrist bone, where you would wear a watch.",
+        detailedGuide: "Wrap the tape around the widest point of your wrist, over the carpal bone. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/9fgnZ0YQ2Mk",
         sketchImage: "/images/jacket/sleeve-opening.png"
@@ -258,7 +258,7 @@ const GARMENT_MEASUREMENTS = {
         key: "shoulder_width",
         label: "Shoulder width",
         description: "Measure from shoulder point to shoulder point across the back.",
-        detailedGuide: "Measure across the back from the edge of one shoulder to the edge of the other shoulder, where the shoulder meets the arm.",
+        detailedGuide: "Have someone assist. Measure from the outer edge of one shoulder bone to the other, slightly curved over the shoulders. Ensure start and end points are level. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/8bT5sg4-Q0o",
         sketchImage: "/images/jacket/shoulder-width.png"
@@ -267,7 +267,7 @@ const GARMENT_MEASUREMENTS = {
         key: "armhole",
         label: "Armhole",
         description: "Measure the armhole circumference.",
-        detailedGuide: "With the jacket laid flat and buttoned, measure from the top shoulder point along the seam where the sleeve is attached, following the curve all the way around back to the starting point.",
+        detailedGuide: "Wrap the tape loosely around the armpit, passing over the shoulder. Avoid pulling tight. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/p3SCb2WsP2M",
         sketchImage: "/images/jacket/armhole.png"
@@ -276,7 +276,7 @@ const GARMENT_MEASUREMENTS = {
         key: "sleeve_length",
         label: "Sleeve length",
         description: "Measure from shoulder point to desired cuff length.",
-        detailedGuide: "With arm slightly bent, measure from the shoulder point down the outside of the arm to where you want the cuff to end.",
+        detailedGuide: "With help, measure from the outer shoulder bone, over the elbow, down to the wrist bone. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/D9StvHaSgM8",
         sketchImage: "/images/jacket/sleeve-length.png"
@@ -285,7 +285,7 @@ const GARMENT_MEASUREMENTS = {
         key: "front_width",
         label: "Front width",
         description: "Measure the front width across the chest.",
-        detailedGuide: "Measure straight across the front of the jacket at the chest level, from side seam to side seam.",
+        detailedGuide: "At chest height, place the tape between the midpoints of each armpit where the arm meets the chest. Keep horizontal. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/JFf0as-X7jA",
         sketchImage: "/images/jacket/chest.png"
@@ -294,7 +294,7 @@ const GARMENT_MEASUREMENTS = {
         key: "back_width",
         label: "Back width",
         description: "Measure across the back below the shoulder blades.",
-        detailedGuide: "Measure straight across the back at the widest point, usually just below the shoulder blades.",
+        detailedGuide: "At chest height, measure across the back between the midpoints of each armpit. Keep horizontal. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/ZeOSNRw9NRM",
         sketchImage: "/images/jacket/backmass.png"
@@ -303,7 +303,7 @@ const GARMENT_MEASUREMENTS = {
         key: "jacket_front_length",
         label: "Jacket front length",
         description: "Measure from the highest point of the shoulder down the front to desired length.",
-        detailedGuide: "Measure from the highest point of the shoulder straight down the front of the body to where you want the jacket to end.",
+        detailedGuide: "Measure from the shoulder seam at the base of the neck straight down the front to the base of the thumb. Maintain an upright posture. Record the measurement.",
         unit: "inches",
         videoUrl: "https://youtu.be/Yi1Zd1MigyM",
         sketchImage: "/images/jacket/front-length.png"

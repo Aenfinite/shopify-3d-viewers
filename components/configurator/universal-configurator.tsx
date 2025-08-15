@@ -27,6 +27,7 @@ import { MeasurementStep } from "./steps/measurement-step"
 import { JacketLiningStep } from "./steps/jacket-lining-step"
 import { CheckoutModal } from "./checkout-modal"
 import { MonogramConfigurator } from "./monogram-configurator-professional"
+import { EmbroideredMonogramStep } from "./steps/embroidered-monogram-step"
 import { FabricTypeSelector } from "./fabric-type-selector"
 import { FabricColorSelector } from "./fabric-color-selector"
 
@@ -76,7 +77,8 @@ interface ConfiguratorState {
 interface MeasurementData {
   sizeType: "standard" | "custom"
   standardSize?: string
-  fitType?: string
+  fitType?: "slim" | "regular" | "comfort"
+  fitPreference?: "slim" | "regular" | "comfort"
   customMeasurementMethod?: "videos" | "sketches"
   customMeasurements?: {
     neck: number
@@ -102,6 +104,7 @@ export function UniversalConfigurator({
     sizeType: "standard",
     standardSize: "m",
     fitType: "regular",
+    fitPreference: "regular",
     customMeasurements: {
       neck: 0,
       chest: 0,
@@ -127,6 +130,10 @@ export function UniversalConfigurator({
     position: "no-monogram",
     style: "classic-serif",
     color: "navy",
+    monogramEnabled: false,
+    monogramType: "initials" as "initials" | "fullname",
+    monogramFont: "england" as "england" | "arial",
+    threadColor: "navy",
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -162,12 +169,14 @@ export function UniversalConfigurator({
     }
   }, [productId])
 
-  // Total steps = customization options + measurement step
-  const totalSteps = customizationOptions.length + 1
+  // Total steps = customization options + fit preference step + measurement step
+  const totalSteps = customizationOptions.length + 2
   const currentStepData = customizationOptions[currentStep]
-  const isMeasurementStep = currentStep === customizationOptions.length
+  const isFitPreferenceStep = currentStep === customizationOptions.length
+  const isMeasurementStep = currentStep === customizationOptions.length + 1
   const isJacketLiningStep = currentStepData?.type === "custom" && currentStepData?.customComponent === "jacket-lining"
-  const isMonogramStep = currentStepData?.id === "embroidered-monogram" || currentStepData?.customComponent === "monogram-configurator"
+  const isMonogramStep = currentStepData?.id === "jacket-monogram" || currentStepData?.customComponent === "monogram"
+  const isEmbroideredMonogramStep = currentStepData?.id === "embroidered-monogram" || currentStepData?.customComponent === "embroidered-monogram"
   const isFabricTypeStep = currentStepData?.id === "fabric-type"
   const isFabricColorStep = currentStepData?.id === "fabric-color"
 
@@ -197,12 +206,13 @@ export function UniversalConfigurator({
   // Calculate completion percentage
   const calculateCompletion = () => {
     const completedCustomizations = Object.keys(configuratorState).length
+    const fitPreferenceCompleted = measurementData.fitPreference !== undefined
     const measurementCompleted =
       measurementData.sizeType === "standard"
         ? measurementData.standardSize && measurementData.fitType
         : Object.values(measurementData.customMeasurements || {}).some((val) => val > 0)
 
-    const totalCompleted = completedCustomizations + (measurementCompleted ? 1 : 0)
+    const totalCompleted = completedCustomizations + (fitPreferenceCompleted ? 1 : 0) + (measurementCompleted ? 1 : 0)
     return totalSteps > 0 ? Math.round((totalCompleted / totalSteps) * 100) : 0
   }
 
@@ -263,8 +273,11 @@ export function UniversalConfigurator({
         // Jacket lining step is completed if a lining type is selected
         return jacketLiningData.liningType !== "none"
       }
-      if (option?.id === "embroidered-monogram") {
-        return monogramData.position !== ""
+      if (option?.id === "jacket-monogram") {
+        return !monogramData.monogramEnabled || (monogramData.text !== "" && monogramData.monogramType && monogramData.threadColor)
+      }
+      if (option?.id === "embroidered-monogram" || option?.customComponent === "embroidered-monogram") {
+        return !monogramData.monogramEnabled || (monogramData.text !== "" && monogramData.monogramType && monogramData.threadColor)
       }
       if (option?.id === "monogram-text") {
         return monogramData.position === "no-monogram" || monogramData.text !== ""
@@ -361,22 +374,29 @@ export function UniversalConfigurator({
         }
 
         // Handle jacket-specific customizations
-        if (option.id === "jacket-style") {
-          customizations.jacketStyle = value.value
-        } else if (option.id === "lapel-style") {
-          customizations.lapelstyle = value.value
-        } else if (option.id === "button-configuration") {
-          customizations.buttonConfiguration = value.value
-          customizations.buttonconfig = value.value // Alternative naming
+        if (option.id === "jacket-front-style") {
+          customizations.frontStyle = value.value
+          customizations.front_style = value.value
+          customizations["jacket-front-style"] = value.value
+        } else if (option.id === "jacket-sleeve-buttons") {
+          customizations.sleeveButtons = value.value
+          customizations.sleeve_buttons = value.value
+          customizations["jacket-sleeve-buttons"] = value.value
+        } else if (option.id === "jacket-vent-style") {
+          customizations.ventStyle = value.value
+          customizations.vent_style = value.value
+          customizations["jacket-vent-style"] = value.value
         } else if (option.id === "button-style") {
           customizations.buttonstyle = value.value
           customizations.buttonStyle = value.value // Camel case version
-        } else if (option.id === "pocket-style") {
-          customizations.pocketstyle = value.value
-        } else if (option.id === "vent-style") {
-          customizations.ventstyle = value.value
-        } else if (option.id === "shoulder-style") {
-          customizations.shoulderstyle = value.value
+        } else if (option.id === "front-pocket") {
+          customizations.frontPocket = value.value
+          customizations.front_pocket = value.value
+          customizations["front-pocket"] = value.value
+        } else if (option.id === "chest-pocket") {
+          customizations.chestPocket = value.value
+          customizations.chest_pocket = value.value
+          customizations["chest-pocket"] = value.value
         }
 
         // Handle ALL other style customizations by mapping option names to customization keys
@@ -764,19 +784,23 @@ export function UniversalConfigurator({
             <div className="flex items-center gap-2 sm:gap-3">
               {isMeasurementStep ? (
                 <Ruler className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 text-blue-600" />
+              ) : isFitPreferenceStep ? (
+                <Shirt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 text-green-600" />
               ) : (
                 getCategoryIcon(currentStepData?.category || "")
               )}
               <h2 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate flex-1">
                 {isMeasurementStep 
                   ? "Measurements" 
+                  : isFitPreferenceStep
+                    ? "Fit Preference"
                   : isJacketLiningStep 
                     ? "Lining & Monogram" 
-                    : isMonogramStep
-                        ? "Monogram Configuration"
+                    : isMonogramStep || isEmbroideredMonogramStep
+                        ? "Embroidered Monogram"
                     : currentStepData?.name || "Customize"}
               </h2>
-              {!isMeasurementStep && !isJacketLiningStep && !isMonogramStep && currentStepData && (
+              {!isMeasurementStep && !isFitPreferenceStep && !isJacketLiningStep && !isMonogramStep && !isEmbroideredMonogramStep && currentStepData && (
                 <Badge variant="secondary" className="text-xs flex-shrink-0 hidden sm:inline-flex">
                   {currentStepData.values.length} option{currentStepData.values.length !== 1 ? 's' : ''}
                 </Badge>
@@ -794,7 +818,79 @@ export function UniversalConfigurator({
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.2 }}
               >
-                {isMeasurementStep ? (
+                {isFitPreferenceStep ? (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shirt className="w-4 h-4 text-green-600" />
+                        <h3 className="font-medium text-green-800">Choose Your Fit Preference</h3>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        Select your preferred fit style. This helps us apply the right overmeasurements during production for optimal comfort.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {[
+                        {
+                          id: "slim",
+                          name: "Slim",
+                          description: "Closer to body, tailored fit with minimal ease"
+                        },
+                        {
+                          id: "regular", 
+                          name: "Regular",
+                          description: "Classic comfortable fit with standard ease"
+                        },
+                        {
+                          id: "comfort",
+                          name: "Comfort", 
+                          description: "Relaxed fit with extra room for movement"
+                        }
+                      ].map((fit) => (
+                        <div
+                          key={fit.id}
+                          onClick={() => setMeasurementData(prev => ({ ...prev, fitPreference: fit.id as "slim" | "regular" | "comfort" }))}
+                          className={`
+                            group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02]
+                            ${
+                              measurementData.fitPreference === fit.id
+                                ? "border-green-500 bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 shadow-lg ring-2 ring-green-200/50 scale-[1.02]"
+                                : "border-gray-200 hover:border-green-300 hover:shadow-lg bg-white hover:bg-gradient-to-br hover:from-gray-50 hover:to-white"
+                            }
+                          `}
+                        >
+                          <div className="flex flex-col items-center gap-3 text-center">
+                            <div className="flex items-center gap-3 w-full">
+                              <div className={`w-4 h-4 rounded-full border-2 ${
+                                measurementData.fitPreference === fit.id 
+                                  ? 'border-green-500 bg-green-500' 
+                                  : 'border-gray-300'
+                              }`}>
+                                {measurementData.fitPreference === fit.id && (
+                                  <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                                )}
+                              </div>
+                              <div className="flex-1 text-left">
+                                <div className="font-semibold text-base text-gray-900 mb-1">
+                                  {fit.name}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {fit.description}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {measurementData.fitPreference === fit.id && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
+                              <Check className="w-3 h-3 text-white font-bold" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : isMeasurementStep ? (
                   <MeasurementStep
                     sizeType={measurementData.sizeType}
                     standardSize={measurementData.standardSize || "m"}
@@ -825,15 +921,15 @@ export function UniversalConfigurator({
                     threadColor={jacketLiningData.threadColor}
                     onUpdate={updateJacketLiningData}
                   />
-                ) : isMonogramStep ? (
-                  <MonogramConfigurator
-                    selectedMonogram={monogramData.position}
-                    selectedStyle={monogramData.style}
-                    selectedColor={monogramData.color}
+                ) : isMonogramStep || isEmbroideredMonogramStep ? (
+                  <EmbroideredMonogramStep
+                    monogramEnabled={monogramData.monogramEnabled}
+                    monogramType={monogramData.monogramType}
                     monogramText={monogramData.text}
-                    onMonogramChange={(config) => {
-                      updateMonogramData(config)
-                      // Don't call selectOption for monogram changes to avoid conflicts
+                    monogramFont={monogramData.monogramFont}
+                    threadColor={monogramData.threadColor}
+                    onUpdate={(updates) => {
+                      updateMonogramData(updates)
                     }}
                   />
                 ) : isFabricTypeStep ? (
@@ -983,7 +1079,7 @@ export function UniversalConfigurator({
                           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
                             Choose {currentStepData.name}
                           </h3>
-                          <div className="space-y-3 sm:space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                             {currentStepData.values.map((value) => (
                               <div
                                 key={value.id}
@@ -998,46 +1094,53 @@ export function UniversalConfigurator({
                                   )
                                 }
                                 className={`
-                                  p-4 sm:p-5 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md
+                                  group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] 
                                   ${
                                     configuratorState[currentStepData.id]?.valueId === value.id
-                                      ? "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200"
-                                      : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                                      ? "border-blue-500 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 shadow-lg ring-2 ring-blue-200/50 scale-[1.02]"
+                                      : "border-gray-200 hover:border-blue-300 hover:shadow-lg bg-white hover:bg-gradient-to-br hover:from-gray-50 hover:to-white"
                                   }
                                 `}
                               >
-                                <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="flex flex-col items-center gap-3">
                                   {value.thumbnail ? (
-                                    <img
-                                      src={value.thumbnail}
-                                      alt={value.name}
-                                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg object-cover border flex-shrink-0 shadow-sm"
-                                    />
+                                    <div className="relative flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                                      <img
+                                        src={value.thumbnail}
+                                        alt={value.name}
+                                        className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border-2 border-white shadow-lg group-hover:shadow-xl transition-all duration-300"
+                                      />
+                                      <div className="absolute inset-0 rounded-xl ring-1 ring-white/30 group-hover:ring-blue-300/50 transition-all duration-300"></div>
+                                    </div>
                                   ) : value.color ? (
-                                    <div
-                                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg border-2 border-white shadow-sm flex-shrink-0"
-                                      style={{ backgroundColor: value.color }}
-                                    />
+                                    <div className="relative flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                                      <div
+                                        className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl border-2 border-white shadow-lg flex-shrink-0 ring-1 ring-white/30 group-hover:ring-blue-300/50 transition-all duration-300"
+                                        style={{ backgroundColor: value.color }}
+                                      />
+                                    </div>
                                   ) : (
-                                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg bg-gray-100 border flex items-center justify-center flex-shrink-0">
-                                      <span className="text-sm sm:text-base font-medium text-gray-600">
-                                        {value.name.charAt(0)}
-                                      </span>
+                                    <div className="relative flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                                      <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-white flex items-center justify-center flex-shrink-0 shadow-lg ring-1 ring-white/30 group-hover:ring-blue-300/50 transition-all duration-300">
+                                        <span className="text-lg md:text-xl font-bold bg-gradient-to-br from-gray-600 to-gray-800 bg-clip-text text-transparent">
+                                          {value.name.charAt(0)}
+                                        </span>
+                                      </div>
                                     </div>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm sm:text-base text-gray-900 truncate mb-1">
+                                  <div className="flex flex-col items-center text-center w-full space-y-1">
+                                    <div className="font-semibold text-sm md:text-base bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
                                       {value.name}
                                     </div>
                                     {value.price !== 0 && (
-                                      <div className={`font-semibold text-sm sm:text-base ${value.price > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <div className={`font-bold text-sm md:text-base px-2 py-1 rounded-lg ${value.price > 0 ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' : 'bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-200'} shadow-sm`}>
                                         {value.price > 0 ? '+' : ''}${Math.abs(value.price)}
                                       </div>
                                     )}
                                   </div>
                                   {configuratorState[currentStepData.id]?.valueId === value.id && (
-                                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                                      <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
+                                      <Check className="w-3 h-3 text-white font-bold" />
                                     </div>
                                   )}
                                 </div>
@@ -1072,14 +1175,15 @@ export function UniversalConfigurator({
                   <Button 
                     onClick={nextStep} 
                     size="sm" 
-                    className="bg-blue-600 hover:bg-blue-700 flex-1 h-10 sm:h-11 text-sm font-medium"
+                    disabled={isFitPreferenceStep && !measurementData.fitPreference}
+                    className="bg-blue-600 hover:bg-blue-700 flex-1 h-10 sm:h-11 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next Step
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                   
-                  {/* Show Add to Cart option on non-measurement steps */}
-                  {!isMeasurementStep && (
+                  {/* Show Add to Cart option on non-measurement and non-fit-preference steps */}
+                  {!isMeasurementStep && !isFitPreferenceStep && (
                     <Button 
                       className="bg-green-600 hover:bg-green-700 flex-1 h-10 sm:h-11 text-sm font-medium" 
                       size="sm" 

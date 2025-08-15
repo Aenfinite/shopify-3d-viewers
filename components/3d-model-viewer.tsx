@@ -237,22 +237,19 @@ function CustomizableModel({
       parts["pocket_double_right"] = doublePocket2
       meshRef.current.add(doublePocket2)
 
-      // ENHANCED BUTTON SYSTEM with comprehensive style, color, and configuration support
+      // ENHANCED FRONT STYLE SYSTEM for jacket buttons
+      const frontStyle = customizations.frontStyle || customizations.front_style || customizations["jacket-front-style"] || "two-buttons"
       const buttonColor = customizations.buttonColor || customizations.button_color || "#F5E6D3"
-      const buttonStyle = customizations.buttonStyle || customizations.buttonstyle || customizations.button_style || customizations.buttons || "classic-round"
+      const buttonStyle = customizations.buttonStyle || customizations.buttonstyle || customizations.button_style || "classic-round"
       const buttonMaterial = customizations.buttonMaterial || customizations.buttonmaterial || customizations.button_material || "horn"
-      const buttonConfiguration = customizations.buttonConfiguration || customizations.buttonconfig || customizations.button_configuration || customizations.buttons || "two-button"
       const buttonSize = customizations.buttonSize || customizations.buttonsize || customizations.button_size || "standard"
-      const buttonType = customizations.buttonType || customizations.buttontype || customizations.button_type || "standard"
       
-      console.log("Button customizations:", {
+      console.log("Front style customizations:", {
+        frontStyle: frontStyle,
         color: buttonColor,
         style: buttonStyle,
         material: buttonMaterial,
-        configuration: buttonConfiguration,
         size: buttonSize,
-        type: buttonType,
-        rawButtons: customizations.buttons,
         allCustomizations: customizations
       })
       
@@ -425,39 +422,26 @@ function CustomizableModel({
         }
       }
 
-      // Determine button count based on configuration
-      const getButtonCount = (config: string) => {
-        const configLower = config.toLowerCase()
-        if (configLower.includes("one") || configLower.includes("1") || configLower.includes("single")) return 1
-        if (configLower.includes("three") || configLower.includes("3")) return 3
-        if (configLower.includes("four") || configLower.includes("4")) return 4
-        if (configLower.includes("five") || configLower.includes("5")) return 5
-        if (configLower.includes("six") || configLower.includes("6") || configLower.includes("double-breasted")) return 6
-        if (configLower.includes("two") || configLower.includes("2") || configLower.includes("double")) return 2
-        
-        // Handle specific jacket configurations
-        if (configLower.includes("one-button") || configLower.includes("1-button")) return 1
-        if (configLower.includes("two-button") || configLower.includes("2-button")) return 2
-        if (configLower.includes("three-button") || configLower.includes("3-button")) return 3
-        if (configLower.includes("four-button") || configLower.includes("4-button")) return 4
-        if (configLower.includes("six-button") || configLower.includes("6-button")) return 6
+      // Determine button count based on front style
+      const getButtonCount = (style: string) => {
+        const styleLower = style.toLowerCase()
+        if (styleLower.includes("two-buttons") || styleLower === "two-buttons") return 2
+        if (styleLower.includes("three-buttons") || styleLower === "three-buttons") return 3
+        if (styleLower.includes("2x3-buttons") || styleLower === "2x3-buttons") return 6 // Double-breasted
         
         return 2 // Default two-button
       }
 
-      // Create jacket buttons based on configuration
-      const buttonCount = getButtonCount(buttonConfiguration)
-      console.log(`Creating ${buttonCount} buttons for configuration: ${buttonConfiguration}`)
+      // Create jacket buttons based on front style
+      const buttonCount = getButtonCount(frontStyle)
+      console.log(`Creating ${buttonCount} buttons for front style: ${frontStyle}`)
       
       // Enhanced button positioning system
-      const getButtonPositions = (count: number, config: string) => {
+      const getButtonPositions = (count: number, style: string) => {
         const positions: Array<{x: number, y: number, z: number}> = []
-        const configLower = config.toLowerCase()
+        const styleLower = style.toLowerCase()
         
-        if (count === 1) {
-          // Single button - center position
-          positions.push({x: 0, y: 0.2, z: 0.16})
-        } else if (count === 2) {
+        if (count === 2) {
           // Two button - classic spacing
           positions.push({x: 0, y: 0.4, z: 0.16})
           positions.push({x: 0, y: 0, z: 0.16})
@@ -466,40 +450,20 @@ function CustomizableModel({
           positions.push({x: 0, y: 0.6, z: 0.16})
           positions.push({x: 0, y: 0.3, z: 0.16})
           positions.push({x: 0, y: 0, z: 0.16})
-        } else if (count === 4) {
-          // Four button - closer spacing
-          positions.push({x: 0, y: 0.6, z: 0.16})
-          positions.push({x: 0, y: 0.35, z: 0.16})
-          positions.push({x: 0, y: 0.1, z: 0.16})
-          positions.push({x: 0, y: -0.15, z: 0.16})
-        } else if (count === 5) {
-          // Five button - very close spacing
-          positions.push({x: 0, y: 0.7, z: 0.16})
-          positions.push({x: 0, y: 0.45, z: 0.16})
-          positions.push({x: 0, y: 0.2, z: 0.16})
-          positions.push({x: 0, y: -0.05, z: 0.16})
-          positions.push({x: 0, y: -0.3, z: 0.16})
-        } else if (count === 6) {
+        } else if (count === 6 && styleLower.includes("2x3")) {
           // Double-breasted - two columns
-          if (configLower.includes("double-breasted")) {
-            positions.push({x: -0.15, y: 0.8, z: 0.16})
-            positions.push({x: 0.15, y: 0.8, z: 0.16})
-            positions.push({x: -0.15, y: 0.5, z: 0.16})
-            positions.push({x: 0.15, y: 0.5, z: 0.16})
-            positions.push({x: -0.15, y: 0.2, z: 0.16})
-            positions.push({x: 0.15, y: 0.2, z: 0.16})
-          } else {
-            // Six buttons in single column
-            for (let i = 0; i < 6; i++) {
-              positions.push({x: 0, y: 0.9 - i * 0.22, z: 0.16})
-            }
-          }
+          positions.push({x: -0.15, y: 0.8, z: 0.16})
+          positions.push({x: 0.15, y: 0.8, z: 0.16})
+          positions.push({x: -0.15, y: 0.5, z: 0.16})
+          positions.push({x: 0.15, y: 0.5, z: 0.16})
+          positions.push({x: -0.15, y: 0.2, z: 0.16})
+          positions.push({x: 0.15, y: 0.2, z: 0.16})
         }
         
         return positions
       }
       
-      const buttonPositions = getButtonPositions(buttonCount, buttonConfiguration)
+      const buttonPositions = getButtonPositions(buttonCount, frontStyle)
       
       for (let i = 0; i < buttonCount; i++) {
         const button = new THREE.Mesh(selectedButtonGeometry.clone(), selectedButtonMaterial.clone())
@@ -592,6 +556,237 @@ function CustomizableModel({
             break
         }
       }
+
+      // SLEEVE BUTTONS CUSTOMIZATION
+      const sleeveButtonType = customizations.sleeveButtons || customizations.sleeve_buttons || customizations["jacket-sleeve-buttons"] || "4-buttons-no-holes"
+      console.log("Adding sleeve buttons:", sleeveButtonType)
+      
+      // Remove existing sleeve buttons
+      const existingSleeveButtons = Object.keys(parts).filter(key => key.startsWith('sleeve_button_'))
+      existingSleeveButtons.forEach(buttonKey => {
+        if (parts[buttonKey] && meshRef.current) {
+          meshRef.current.remove(parts[buttonKey])
+          delete parts[buttonKey]
+        }
+      })
+      
+      // Create sleeve buttons
+      const sleeveButtonGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.015, 8)
+      const sleeveButtonMaterial = new THREE.MeshStandardMaterial({
+        color: buttonColor,
+        roughness: 0.3,
+        metalness: 0.2,
+      })
+      
+      // Add 4 buttons to each sleeve
+      const sleeveButtonPositions = [
+        { x: -1.4, y: -0.8, z: 0 },  // Left sleeve buttons
+        { x: -1.4, y: -0.9, z: 0 },
+        { x: -1.4, y: -1.0, z: 0 },
+        { x: -1.4, y: -1.1, z: 0 },
+        { x: 1.4, y: -0.8, z: 0 },   // Right sleeve buttons
+        { x: 1.4, y: -0.9, z: 0 },
+        { x: 1.4, y: -1.0, z: 0 },
+        { x: 1.4, y: -1.1, z: 0 }
+      ]
+      
+      sleeveButtonPositions.forEach((pos, index) => {
+        const sleeveButton = new THREE.Mesh(sleeveButtonGeometry, sleeveButtonMaterial.clone())
+        sleeveButton.position.set(pos.x, pos.y, pos.z)
+        
+        // Add holes for functional buttons
+        if (sleeveButtonType === "4-buttons-with-holes") {
+          const holeGeometry = new THREE.CylinderGeometry(0.015, 0.015, 0.02, 8)
+          const holeMaterial = new THREE.MeshStandardMaterial({
+            color: "#000000",
+            transparent: true,
+            opacity: 0.8
+          })
+          const hole = new THREE.Mesh(holeGeometry, holeMaterial)
+          hole.position.set(0, 0, 0.01)
+          sleeveButton.add(hole)
+        }
+        
+        sleeveButton.name = `sleeve_button_${index}`
+        parts[`sleeve_button_${index}`] = sleeveButton
+        if (meshRef.current) {
+          meshRef.current.add(sleeveButton)
+        }
+      })
+
+      // FRONT POCKET CUSTOMIZATION
+      const frontPocketType = customizations.frontPocket || customizations.front_pocket || customizations["front-pocket"] || "flap-pocket"
+      console.log("Adding front pocket:", frontPocketType)
+      
+      // Remove existing front pockets
+      const existingFrontPockets = Object.keys(parts).filter(key => key.startsWith('front_pocket_'))
+      existingFrontPockets.forEach(pocketKey => {
+        if (parts[pocketKey] && meshRef.current) {
+          meshRef.current.remove(parts[pocketKey])
+          delete parts[pocketKey]
+        }
+      })
+      
+      const frontPocketMaterial = new THREE.MeshStandardMaterial({
+        color: mainColor,
+        roughness: 0.6,
+      })
+      
+      if (frontPocketType === "flap-pocket") {
+        // Flap pockets with flaps
+        const pocketGeometry = new THREE.BoxGeometry(0.4, 0.25, 0.05)
+        const flapGeometry = new THREE.BoxGeometry(0.42, 0.12, 0.02)
+        
+        // Left pocket
+        const leftPocket = new THREE.Mesh(pocketGeometry, frontPocketMaterial)
+        leftPocket.position.set(-0.6, -0.3, 0.16)
+        leftPocket.name = "front_pocket_left"
+        parts["front_pocket_left"] = leftPocket
+        if (meshRef.current) {
+          meshRef.current.add(leftPocket)
+        }
+        
+        const leftFlap = new THREE.Mesh(flapGeometry, frontPocketMaterial)
+        leftFlap.position.set(-0.6, -0.1, 0.18)
+        leftFlap.name = "front_pocket_left_flap"
+        parts["front_pocket_left_flap"] = leftFlap
+        if (meshRef.current) {
+          meshRef.current.add(leftFlap)
+        }
+        
+        // Right pocket
+        const rightPocket = new THREE.Mesh(pocketGeometry, frontPocketMaterial)
+        rightPocket.position.set(0.6, -0.3, 0.16)
+        rightPocket.name = "front_pocket_right"
+        parts["front_pocket_right"] = rightPocket
+        if (meshRef.current) {
+          meshRef.current.add(rightPocket)
+        }
+        
+        const rightFlap = new THREE.Mesh(flapGeometry, frontPocketMaterial)
+        rightFlap.position.set(0.6, -0.1, 0.18)
+        rightFlap.name = "front_pocket_right_flap"
+        parts["front_pocket_right_flap"] = rightFlap
+        if (meshRef.current) {
+          meshRef.current.add(rightFlap)
+        }
+      } else if (frontPocketType === "patch-pocket") {
+        // Patch pockets - raised from the surface
+        const patchPocketGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.08)
+        
+        const leftPatchPocket = new THREE.Mesh(patchPocketGeometry, frontPocketMaterial)
+        leftPatchPocket.position.set(-0.6, -0.3, 0.18)
+        leftPatchPocket.name = "front_pocket_left_patch"
+        parts["front_pocket_left_patch"] = leftPatchPocket
+        if (meshRef.current) {
+          meshRef.current.add(leftPatchPocket)
+        }
+        
+        const rightPatchPocket = new THREE.Mesh(patchPocketGeometry, frontPocketMaterial)
+        rightPatchPocket.position.set(0.6, -0.3, 0.18)
+        rightPatchPocket.name = "front_pocket_right_patch"
+        parts["front_pocket_right_patch"] = rightPatchPocket
+        if (meshRef.current) {
+          meshRef.current.add(rightPatchPocket)
+        }
+      }
+
+      // CHEST POCKET CUSTOMIZATION
+      const chestPocketType = customizations.chestPocket || customizations.chest_pocket || customizations["chest-pocket"] || "piping-pocket"
+      console.log("Adding chest pocket:", chestPocketType)
+      
+      // Remove existing chest pockets
+      const existingChestPockets = Object.keys(parts).filter(key => key.startsWith('chest_pocket_'))
+      existingChestPockets.forEach(pocketKey => {
+        if (parts[pocketKey] && meshRef.current) {
+          meshRef.current.remove(parts[pocketKey])
+          delete parts[pocketKey]
+        }
+      })
+      
+      if (chestPocketType === "piping-pocket") {
+        // Piping pocket - subtle, with piped edges
+        const pipingPocketGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.02)
+        const pipingGeometry = new THREE.BoxGeometry(0.32, 0.02, 0.03)
+        
+        const chestPocket = new THREE.Mesh(pipingPocketGeometry, frontPocketMaterial)
+        chestPocket.position.set(-0.4, 0.8, 0.16)
+        chestPocket.name = "chest_pocket_piping"
+        parts["chest_pocket_piping"] = chestPocket
+        if (meshRef.current) {
+          meshRef.current.add(chestPocket)
+        }
+        
+        // Top piping
+        const topPiping = new THREE.Mesh(pipingGeometry, frontPocketMaterial)
+        topPiping.position.set(-0.4, 0.88, 0.17)
+        topPiping.name = "chest_pocket_piping_top"
+        parts["chest_pocket_piping_top"] = topPiping
+        if (meshRef.current) {
+          meshRef.current.add(topPiping)
+        }
+      } else if (chestPocketType === "patch-pocket-chest") {
+        // Patch pocket on chest - raised
+        const chestPatchGeometry = new THREE.BoxGeometry(0.3, 0.2, 0.06)
+        
+        const chestPatchPocket = new THREE.Mesh(chestPatchGeometry, frontPocketMaterial)
+        chestPatchPocket.position.set(-0.4, 0.8, 0.18)
+        chestPatchPocket.name = "chest_pocket_patch"
+        parts["chest_pocket_patch"] = chestPatchPocket
+        if (meshRef.current) {
+          meshRef.current.add(chestPatchPocket)
+        }
+      }
+
+      // VENT STYLE CUSTOMIZATION
+      const ventStyle = customizations.ventStyle || customizations.vent_style || customizations["jacket-vent-style"] || "one-back-vent"
+      console.log("Adding vent style:", ventStyle)
+      
+      // Remove existing vents
+      const existingVents = Object.keys(parts).filter(key => key.startsWith('vent_'))
+      existingVents.forEach(ventKey => {
+        if (parts[ventKey] && meshRef.current) {
+          meshRef.current.remove(parts[ventKey])
+          delete parts[ventKey]
+        }
+      })
+      
+      const ventMaterial = new THREE.MeshStandardMaterial({
+        color: mainColor,
+        roughness: 0.6,
+      })
+      
+      if (ventStyle === "one-back-vent") {
+        // Single center vent
+        const ventGeometry = new THREE.BoxGeometry(0.15, 0.4, 0.03)
+        const centerVent = new THREE.Mesh(ventGeometry, ventMaterial)
+        centerVent.position.set(0, -1.2, -0.18) // Back of jacket
+        centerVent.name = "vent_center"
+        parts["vent_center"] = centerVent
+        if (meshRef.current) {
+          meshRef.current.add(centerVent)
+        }
+      } else if (ventStyle === "two-back-vent") {
+        // Two side vents
+        const ventGeometry = new THREE.BoxGeometry(0.12, 0.35, 0.03)
+        
+        const leftVent = new THREE.Mesh(ventGeometry, ventMaterial)
+        leftVent.position.set(-0.4, -1.2, -0.18)
+        leftVent.name = "vent_left"
+        parts["vent_left"] = leftVent
+        if (meshRef.current) {
+          meshRef.current.add(leftVent)
+        }
+        
+        const rightVent = new THREE.Mesh(ventGeometry, ventMaterial)
+        rightVent.position.set(0.4, -1.2, -0.18)
+        rightVent.name = "vent_right"
+        parts["vent_right"] = rightVent
+        if (meshRef.current) {
+          meshRef.current.add(rightVent)
+        }
+      }
+
     } else if (modelType === "sample-pants") {
       // PANTS WITH ALL CUSTOMIZATIONS AND COLORS
       const baseColor = mainColor
