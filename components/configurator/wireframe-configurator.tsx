@@ -7,7 +7,9 @@ import { Progress } from "@/components/ui/progress"
 import { ChevronLeft, ChevronRight, ShoppingCart, Maximize2, RotateCcw, Check, Ruler } from "lucide-react"
 import { ModelViewer } from "@/components/3d-model-viewer"
 import { motion, AnimatePresence } from "framer-motion"
-import { MeasurementModal } from "./measurement-modal"
+import { MeasurementModal } from "./enhanced-measurement-modal"
+import { FabricTypeSelector } from "./fabric-type-selector"
+import { FabricColorSelector } from "./fabric-color-selector"
 
 interface ConfiguratorState {
   fabricType: string
@@ -28,6 +30,8 @@ interface ConfiguratorState {
   pocketStyle?: string
   liningColor?: string
   shoulderPadding?: string
+  threadColor?: string
+  pocketDetails?: string
   // Pants specific
   waistStyle?: string
   legStyle?: string
@@ -46,53 +50,91 @@ interface ConfiguratorState {
 const JACKET_STEPS = [
   {
     id: 1,
-    title: "Select Fabric",
-    key: "fabric",
+    title: "Select Fabric Type",
+    key: "fabric-type",
     options: [
       {
         id: "wool-blend",
         name: "Wool Blend",
         price: 0,
-        color: "#2C2C2C",
         image: "/placeholder.svg?height=60&width=60&text=Wool",
-        description: "Classic business fabric",
+        description: "Classic business fabric - Perfect for year-round wear",
+        weight: "Medium weight",
+        season: "All seasons",
+        availableColors: ["charcoal", "navy", "black", "brown", "gray"]
       },
       {
         id: "premium-wool",
         name: "Premium Wool",
         price: 50,
-        color: "#1A1A1A",
         image: "/placeholder.svg?height=60&width=60&text=Premium",
-        description: "Luxury Italian wool",
+        description: "Luxury Italian wool - Superior drape and comfort",
+        weight: "Medium-heavy weight",
+        season: "Fall/Winter",
+        availableColors: ["charcoal", "navy", "black", "brown"]
       },
       {
         id: "cashmere-blend",
         name: "Cashmere Blend",
         price: 120,
-        color: "#3A3A3A",
         image: "/placeholder.svg?height=60&width=60&text=Cashmere",
-        description: "Ultra-soft cashmere",
+        description: "Ultra-soft cashmere blend - Ultimate luxury",
+        weight: "Light-medium weight",
+        season: "Fall/Winter/Spring",
+        availableColors: ["charcoal", "navy", "brown", "camel"]
+      },
+      {
+        id: "summer-wool",
+        name: "Summer Wool",
+        price: 30,
+        image: "/placeholder.svg?height=60&width=60&text=Summer",
+        description: "Lightweight tropical wool - Breathable and cool",
+        weight: "Lightweight",
+        season: "Spring/Summer",
+        availableColors: ["light-gray", "navy", "charcoal", "beige"]
       },
       {
         id: "tweed",
         name: "Tweed",
         price: 80,
-        color: "#8B7355",
         image: "/placeholder.svg?height=60&width=60&text=Tweed",
-        description: "Traditional tweed",
+        description: "Traditional tweed - Textured and durable",
+        weight: "Heavy weight",
+        season: "Fall/Winter",
+        availableColors: ["brown", "green", "gray", "charcoal"]
       },
-    ],
-    colors: [
-      { id: "charcoal", name: "Charcoal", hex: "#36454F" },
-      { id: "navy", name: "Navy", hex: "#000080" },
-      { id: "black", name: "Black", hex: "#000000" },
-      { id: "brown", name: "Brown", hex: "#8B4513" },
-      { id: "gray", name: "Gray", hex: "#808080" },
-      { id: "olive", name: "Olive", hex: "#808000" },
+      {
+        id: "linen-blend",
+        name: "Linen Blend",
+        price: 40,
+        image: "/placeholder.svg?height=60&width=60&text=Linen",
+        description: "Linen-wool blend - Natural and breathable",
+        weight: "Lightweight",
+        season: "Spring/Summer",
+        availableColors: ["beige", "light-blue", "white", "light-gray"]
+      },
     ],
   },
   {
     id: 2,
+    title: "Select Fabric Color",
+    key: "fabric-color",
+    colors: [
+      { id: "charcoal", name: "Charcoal", hex: "#36454F", fabrics: ["wool-blend", "premium-wool", "cashmere-blend", "summer-wool", "tweed"] },
+      { id: "navy", name: "Navy", hex: "#000080", fabrics: ["wool-blend", "premium-wool", "cashmere-blend", "summer-wool"] },
+      { id: "black", name: "Black", hex: "#000000", fabrics: ["wool-blend", "premium-wool"] },
+      { id: "brown", name: "Brown", hex: "#8B4513", fabrics: ["wool-blend", "premium-wool", "cashmere-blend", "tweed"] },
+      { id: "gray", name: "Gray", hex: "#808080", fabrics: ["wool-blend", "tweed"] },
+      { id: "light-gray", name: "Light Gray", hex: "#D3D3D3", fabrics: ["summer-wool", "linen-blend"] },
+      { id: "green", name: "Forest Green", hex: "#228B22", fabrics: ["tweed"] },
+      { id: "beige", name: "Beige", hex: "#F5F5DC", fabrics: ["summer-wool", "linen-blend"] },
+      { id: "camel", name: "Camel", hex: "#C19A6B", fabrics: ["cashmere-blend"] },
+      { id: "light-blue", name: "Light Blue", hex: "#ADD8E6", fabrics: ["linen-blend"] },
+      { id: "white", name: "White", hex: "#FFFFFF", fabrics: ["linen-blend"] },
+    ],
+  },
+  {
+    id: 3,
     title: "Jacket Style",
     key: "style",
     lapels: [
@@ -166,7 +208,7 @@ const JACKET_STEPS = [
     ],
   },
   {
-    id: 3,
+    id: 4,
     title: "Lining & Details",
     key: "details",
     linings: [
@@ -184,7 +226,7 @@ const JACKET_STEPS = [
     ],
   },
   {
-    id: 4,
+    id: 5,
     title: "Buttons & Monogram",
     key: "finishing",
     buttons: [
@@ -224,7 +266,7 @@ const JACKET_STEPS = [
     ],
   },
   {
-    id: 5,
+    id: 6,
     title: "Size & Fit",
     key: "sizing",
     fits: [
@@ -233,12 +275,12 @@ const JACKET_STEPS = [
       { id: "slim", name: "Slim Fit", price: 20, description: "Close-fitting modern" },
     ],
     sizes: [
-      { id: "36r", name: "36R", price: 0, measurements: 'Chest: 36", Regular length' },
-      { id: "38r", name: "38R", price: 0, measurements: 'Chest: 38", Regular length' },
-      { id: "40r", name: "40R", price: 0, measurements: 'Chest: 40", Regular length' },
-      { id: "42r", name: "42R", price: 0, measurements: 'Chest: 42", Regular length' },
-      { id: "44r", name: "44R", price: 5, measurements: 'Chest: 44", Regular length' },
-      { id: "custom", name: "Custom", price: 50, measurements: "Tailored measurements" },
+      { id: "36r", name: "36R", price: 0, measurements: 'Chest: 91cm, Regular length' },
+      { id: "38r", name: "38R", price: 0, measurements: 'Chest: 97cm, Regular length' },
+      { id: "40r", name: "40R", price: 0, measurements: 'Chest: 102cm, Regular length' },
+      { id: "42r", name: "42R", price: 0, measurements: 'Chest: 107cm, Regular length' },
+      { id: "44r", name: "44R", price: 5, measurements: 'Chest: 112cm, Regular length' },
+      { id: "custom", name: "Custom", price: 50, measurements: "Professional measurements required" },
     ],
   },
 ]
@@ -372,18 +414,18 @@ const PANTS_STEPS = [
     title: "Size & Fit",
     key: "sizing",
     sizes: [
-      { id: "30", name: "30", price: 0, measurements: 'Waist: 30"' },
-      { id: "32", name: "32", price: 0, measurements: 'Waist: 32"' },
-      { id: "34", name: "34", price: 0, measurements: 'Waist: 34"' },
-      { id: "36", name: "36", price: 0, measurements: 'Waist: 36"' },
-      { id: "38", name: "38", price: 0, measurements: 'Waist: 38"' },
-      { id: "custom", name: "Custom", price: 30, measurements: "Tailored measurements" },
+      { id: "30", name: "30", price: 0, measurements: 'Waist: 76cm' },
+      { id: "32", name: "32", price: 0, measurements: 'Waist: 81cm' },
+      { id: "34", name: "34", price: 0, measurements: 'Waist: 86cm' },
+      { id: "36", name: "36", price: 0, measurements: 'Waist: 91cm' },
+      { id: "38", name: "38", price: 0, measurements: 'Waist: 97cm' },
+      { id: "custom", name: "Custom", price: 30, measurements: "Professional measurements required" },
     ],
     inseam: [
-      { id: "30", name: '30"', price: 0 },
-      { id: "32", name: '32"', price: 0 },
-      { id: "34", name: '34"', price: 0 },
-      { id: "36", name: '36"', price: 5 },
+      { id: "30", name: '76cm', price: 0 },
+      { id: "32", name: '81cm', price: 0 },
+      { id: "34", name: '86cm', price: 0 },
+      { id: "36", name: '91cm', price: 5 },
     ],
   },
 ]
@@ -581,13 +623,13 @@ const SHIRT_STEPS = [
     title: "Size & Quantity",
     key: "sizing",
     sizes: [
-      { id: "xs", name: "XS", price: 0, measurements: 'Chest: 34-36"' },
-      { id: "s", name: "S", price: 0, measurements: 'Chest: 36-38"' },
-      { id: "m", name: "M", price: 0, measurements: 'Chest: 38-40"' },
-      { id: "l", name: "L", price: 0, measurements: 'Chest: 40-42"' },
-      { id: "xl", name: "XL", price: 0, measurements: 'Chest: 42-44"' },
-      { id: "xxl", name: "XXL", price: 5, measurements: 'Chest: 44-46"' },
-      { id: "custom", name: "Custom", price: 25, measurements: "Tailored measurements" },
+      { id: "xs", name: "XS", price: 0, measurements: 'Chest: 86-91cm' },
+      { id: "s", name: "S", price: 0, measurements: 'Chest: 91-97cm' },
+      { id: "m", name: "M", price: 0, measurements: 'Chest: 97-102cm' },
+      { id: "l", name: "L", price: 0, measurements: 'Chest: 102-107cm' },
+      { id: "xl", name: "XL", price: 0, measurements: 'Chest: 107-112cm' },
+      { id: "xxl", name: "XXL", price: 5, measurements: 'Chest: 112-117cm' },
+      { id: "custom", name: "Custom", price: 25, measurements: "Professional measurements required" },
     ],
   },
 ]
@@ -709,12 +751,12 @@ export function WireframeConfigurator({
     }
 
     // Add button price
-    const buttonOption = currentStepData?.buttons?.find((opt) => opt.id === configuratorState.buttonStyle)
+    const buttonOption = (currentStepData as any)?.buttons?.find((opt: any) => opt.id === configuratorState.buttonStyle)
     if (buttonOption) total += buttonOption.price
 
     // Add monogram price
-    const monogramOption = currentStepData?.monogramPositions?.find(
-      (opt) => opt.id === configuratorState.monogramPosition,
+    const monogramOption = (currentStepData as any)?.monogramPositions?.find(
+      (opt: any) => opt.id === configuratorState.monogramPosition,
     )
     if (monogramOption) total += monogramOption.price
 
@@ -744,6 +786,12 @@ export function WireframeConfigurator({
       console.log("New state:", newState)
       return newState
     })
+  }
+
+  const selectOption = (category: string, optionId: string, price: number, value?: any) => {
+    console.log(`Selected ${category}: ${optionId} (${price})`)
+    // This function can be used for analytics or additional processing
+    // The actual state update should be done through updateState
   }
 
   const getModelUrl = () => {
@@ -845,78 +893,59 @@ export function WireframeConfigurator({
   const renderJacketStepContent = () => {
     switch (currentStep) {
       case 1:
+        // Fabric Type Selection
         return (
-          <div className="space-y-6">
-            {/* Fabric Types */}
-            <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Fabric Type</h3>
-              <div className="space-y-3">
-                {currentStepData?.options?.map((option) => (
-                  <div
-                    key={option.id}
-                    onClick={() => updateState({ fabricType: option.id })}
-                    className={`
-                      p-3 rounded-lg border-2 cursor-pointer transition-all
-                      ${
-                        configuratorState.fabricType === option.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                      }
-                    `}
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={option.image || "/placeholder.svg"}
-                        alt={option.name}
-                        className="w-12 h-12 rounded-lg object-cover border"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{option.name}</div>
-                        <div className="text-xs text-gray-600">{option.description}</div>
-                        {option.price > 0 && (
-                          <div className="text-green-600 font-semibold text-sm">+${option.price}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Fabric Colors */}
-            <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Fabric Color</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {currentStepData?.colors?.map((color) => (
-                  <div
-                    key={color.id}
-                    onClick={() => updateState({ fabricColor: color.hex })}
-                    className={`
-                      p-2 rounded-lg border-2 cursor-pointer transition-all text-center hover:scale-105
-                      ${
-                        configuratorState.fabricColor === color.hex
-                          ? "border-blue-500 ring-2 ring-blue-200"
-                          : "border-gray-200 hover:border-gray-300"
-                      }
-                    `}
-                  >
-                    <div className="w-6 h-6 rounded-full mx-auto mb-1 border" style={{ backgroundColor: color.hex }} />
-                    <span className="text-xs font-medium">{color.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <FabricTypeSelector
+            selectedFabricType={configuratorState.fabricType}
+            onFabricSelect={(fabricId, price) => {
+              updateState({ fabricType: fabricId })
+              selectOption("fabric-type", fabricId, price, fabricId)
+            }}
+            fabrics={currentStepData?.options?.map(opt => ({
+              id: opt.id,
+              name: opt.name,
+              price: opt.price,
+              image: opt.image,
+              description: opt.description,
+              weight: (opt as any).weight || "Medium",
+              season: (opt as any).season || "All seasons",
+              availableColors: (opt as any).availableColors || []
+            })) || []}
+          />
+        )
+      
+      case 2:
+        // Fabric Color Selection (filtered by fabric type)
+        return (
+          <FabricColorSelector
+            selectedFabricType={configuratorState.fabricType}
+            selectedColor={configuratorState.fabricColor}
+            onColorSelect={(colorId, price) => {
+              const colorData = currentStepData?.colors?.find(c => c.id === colorId)
+              if (colorData) {
+                updateState({ fabricColor: colorData.hex })
+                selectOption("fabric-color", colorId, price || 0, colorData.hex)
+              }
+            }}
+            onBack={() => setCurrentStep(1)}
+            availableColors={currentStepData?.colors?.map(color => ({
+              id: color.id,
+              name: color.name,
+              hex: color.hex,
+              fabrics: (color as any).fabrics || []
+            })) || []}
+          />
         )
 
-      case 2:
+      case 3:
+        // Jacket Style (lapels, vents, pockets)
         return (
           <div className="space-y-6">
             {/* Lapel Style */}
             <div>
               <h3 className="font-semibold mb-3 text-gray-900">Lapel Style</h3>
               <div className="space-y-2">
-                {JACKET_STEPS[1]?.lapels?.map((lapel) => (
+                {(currentStepData as any)?.lapels?.map((lapel: any) => (
                   <div
                     key={lapel.id}
                     onClick={() => updateState({ lapelStyle: lapel.id })}
@@ -950,7 +979,7 @@ export function WireframeConfigurator({
             <div>
               <h3 className="font-semibold mb-3 text-gray-900">Vent Style</h3>
               <div className="grid grid-cols-1 gap-2">
-                {JACKET_STEPS[1]?.vents?.map((vent) => (
+                {(currentStepData as any)?.vents?.map((vent: any) => (
                   <div
                     key={vent.id}
                     onClick={() => updateState({ ventStyle: vent.id })}
@@ -984,7 +1013,7 @@ export function WireframeConfigurator({
             <div>
               <h3 className="font-semibold mb-3 text-gray-900">Pocket Style</h3>
               <div className="grid grid-cols-1 gap-2">
-                {JACKET_STEPS[1]?.pockets?.map((pocket) => (
+                {(currentStepData as any)?.pockets?.map((pocket: any) => (
                   <div
                     key={pocket.id}
                     onClick={() => updateState({ pocketStyle: pocket.id })}
@@ -1018,14 +1047,101 @@ export function WireframeConfigurator({
           </div>
         )
 
-      case 3:
+      case 4:
+        // Monogram
         return (
           <div className="space-y-6">
-            {/* Lining Color */}
+            {/* Monogram Position */}
+            <div>
+              <h3 className="font-semibold mb-3 text-gray-900">Monogram Position</h3>
+              <div className="space-y-2">
+                {(currentStepData as any)?.positions?.map((position: any) => (
+                  <div
+                    key={position.id}
+                    onClick={() => updateState({ monogramPosition: position.id })}
+                    className={`
+                      p-3 rounded-lg border-2 cursor-pointer transition-all
+                      ${
+                        configuratorState.monogramPosition === position.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={position.image || "/placeholder.svg"}
+                        alt={position.name}
+                        className="w-10 h-12 rounded object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{position.name}</div>
+                        <div className="text-xs text-gray-600">{position.description}</div>
+                        {position.price > 0 && <div className="text-green-600 font-semibold text-sm">+${position.price}</div>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Monogram Text */}
+            {configuratorState.monogramPosition && configuratorState.monogramPosition !== "none" && (
+              <div>
+                <h3 className="font-semibold mb-3 text-gray-900">Monogram Text</h3>
+                <input
+                  type="text"
+                  placeholder="Enter initials (ABC)"
+                  value={configuratorState.monogramText}
+                  onChange={(e) => updateState({ monogramText: e.target.value.slice(0, 3).toUpperCase() })}
+                  className="w-full p-2 border rounded-lg mb-3 text-center font-mono"
+                  maxLength={3}
+                />
+              </div>
+            )}
+
+            {/* Thread Color */}
+            {configuratorState.monogramPosition && configuratorState.monogramPosition !== "none" && (
+              <div>
+                <h3 className="font-semibold mb-3 text-gray-900">Thread Color</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {(currentStepData as any)?.threadColors?.map((color: any) => (
+                    <div
+                      key={color.id}
+                      onClick={() => updateState({ threadColor: color.id })}
+                      className={`
+                        aspect-square rounded-lg border-2 cursor-pointer transition-all relative overflow-hidden
+                        ${
+                          configuratorState.threadColor === color.id
+                            ? "border-blue-500 ring-2 ring-blue-200"
+                            : "border-gray-200 hover:border-gray-300"
+                        }
+                      `}
+                    >
+                      <img
+                        src={color.image || `/placeholder.svg?height=60&width=60&text=${color.name}`}
+                        alt={color.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 text-center">
+                        {color.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+
+      case 5:
+        // Lining
+        return (
+          <div className="space-y-6">
             <div>
               <h3 className="font-semibold mb-3 text-gray-900">Lining Color</h3>
               <div className="space-y-2">
-                {JACKET_STEPS[2]?.linings?.map((lining) => (
+                {currentStepData?.colors?.map((lining) => (
                   <div
                     key={lining.id}
                     onClick={() => updateState({ liningColor: lining.id })}
@@ -1042,41 +1158,10 @@ export function WireframeConfigurator({
                       <div className="w-8 h-8 rounded-full border" style={{ backgroundColor: lining.hex }} />
                       <div className="flex-1">
                         <div className="font-medium text-sm">{lining.name}</div>
-                        {lining.price > 0 && (
-                          <div className="text-green-600 font-semibold text-sm">+${lining.price}</div>
+                        {(lining as any).price > 0 && (
+                          <div className="text-green-600 font-semibold text-sm">+${(lining as any).price}</div>
                         )}
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Shoulder Padding */}
-            <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Shoulder Padding</h3>
-              <div className="space-y-2">
-                {JACKET_STEPS[2]?.shoulderPadding?.map((shoulder) => (
-                  <div
-                    key={shoulder.id}
-                    onClick={() => updateState({ shoulderPadding: shoulder.id })}
-                    className={`
-                      p-3 rounded-lg border-2 cursor-pointer transition-all
-                      ${
-                        configuratorState.shoulderPadding === shoulder.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }
-                    `}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-sm">{shoulder.name}</div>
-                        <div className="text-xs text-gray-600">{shoulder.description}</div>
-                      </div>
-                      {shoulder.price > 0 && (
-                        <span className="text-green-600 font-semibold text-sm">+${shoulder.price}</span>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -1085,21 +1170,21 @@ export function WireframeConfigurator({
           </div>
         )
 
-      case 4:
+      case 6:
+        // Details (pockets)
         return (
           <div className="space-y-6">
-            {/* Button Style */}
             <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Button Style</h3>
+              <h3 className="font-semibold mb-3 text-gray-900">Pocket Details</h3>
               <div className="space-y-2">
-                {JACKET_STEPS[3]?.buttons?.map((button) => (
+                {(currentStepData as any)?.pockets?.map((pocket: any) => (
                   <div
-                    key={button.id}
-                    onClick={() => updateState({ buttonStyle: button.id })}
+                    key={pocket.id}
+                    onClick={() => updateState({ pocketDetails: pocket.id })}
                     className={`
                       p-3 rounded-lg border-2 cursor-pointer transition-all
                       ${
-                        configuratorState.buttonStyle === button.id
+                        configuratorState.pocketDetails === pocket.id
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 hover:border-gray-300"
                       }
@@ -1107,51 +1192,17 @@ export function WireframeConfigurator({
                   >
                     <div className="flex items-center gap-3">
                       <img
-                        src={button.image || "/placeholder.svg"}
-                        alt={button.name}
-                        className="w-8 h-8 rounded object-cover"
+                        src={pocket.image || "/placeholder.svg"}
+                        alt={pocket.name}
+                        className="w-12 h-8 rounded object-cover"
                       />
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{button.name}</div>
-                        <div className="text-xs text-gray-600">{button.description}</div>
-                        {button.price > 0 && (
-                          <div className="text-green-600 font-semibold text-sm">+${button.price}</div>
+                        <div className="font-medium text-sm">{pocket.name}</div>
+                        <div className="text-xs text-gray-600">{pocket.description}</div>
+                        {pocket.price > 0 && (
+                          <div className="text-green-600 font-semibold text-sm">+${pocket.price}</div>
                         )}
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Monogram */}
-            <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Monogram</h3>
-              <input
-                type="text"
-                placeholder="Enter initials (ABC)"
-                value={configuratorState.monogramText}
-                onChange={(e) => updateState({ monogramText: e.target.value.slice(0, 3).toUpperCase() })}
-                className="w-full p-2 border rounded-lg mb-3 text-center font-mono"
-                maxLength={3}
-              />
-              <div className="space-y-2">
-                {JACKET_STEPS[3]?.monogramPositions?.map((position) => (
-                  <div
-                    key={position.id}
-                    onClick={() => updateState({ monogramPosition: position.id })}
-                    className={`
-                      p-2 rounded border-2 cursor-pointer transition-all
-                      ${
-                        configuratorState.monogramPosition === position.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }
-                    `}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{position.name}</span>
-                      {position.price > 0 && <span className="text-xs text-green-600">+${position.price}</span>}
                     </div>
                   </div>
                 ))}
@@ -1160,38 +1211,10 @@ export function WireframeConfigurator({
           </div>
         )
 
-      case 5:
+      case 6:
+        // Final Review/Summary Step
         return (
           <div className="space-y-6">
-            {/* Fit Style */}
-            <div>
-              <h3 className="font-semibold mb-3 text-gray-900">Fit Style</h3>
-              <div className="space-y-2">
-                {JACKET_STEPS[4]?.fits?.map((fit) => (
-                  <div
-                    key={fit.id}
-                    onClick={() => updateState({ sleeveStyle: fit.id })}
-                    className={`
-                      p-3 rounded-lg border-2 cursor-pointer transition-all
-                      ${
-                        configuratorState.sleeveStyle === fit.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }
-                    `}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-sm">{fit.name}</div>
-                        <div className="text-xs text-gray-600">{fit.description}</div>
-                      </div>
-                      {fit.price > 0 && <span className="text-green-600 font-semibold text-sm">+${fit.price}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Size Selection - Button to open modal */}
             <div>
               <h3 className="font-semibold mb-3 text-gray-900">Size & Measurements</h3>

@@ -202,32 +202,72 @@ export const SAMPLE_PRODUCTS_WITH_CUSTOMIZATION = {
   ],
   "jacket-001": [
     {
-      id: "fabric-color",
-      name: "Fabric Color",
-      type: "color" as const,
-      category: "fabric",
-      values: [
-        { id: "navy", name: "Navy", value: "#1565C0", price: 0, color: "#1565C0" },
-        { id: "charcoal", name: "Charcoal", value: "#424242", price: 0, color: "#424242" },
-        { id: "black", name: "Black", value: "#000000", price: 10, color: "#000000" },
-        { id: "brown", name: "Brown", value: "#5D4037", price: 5, color: "#5D4037" },
-        { id: "burgundy", name: "Burgundy", value: "#8E24AA", price: 15, color: "#8E24AA" },
-        { id: "forest", name: "Forest Green", value: "#2E7D32", price: 15, color: "#2E7D32" },
-        { id: "midnight", name: "Midnight Blue", value: "#0D47A1", price: 10, color: "#0D47A1" },
-      ],
-    },
-    {
       id: "fabric-type",
-      name: "Fabric Type",
+      name: "Select Fabric Type",
       type: "texture" as const,
       category: "fabric",
       values: [
-        { id: "wool", name: "Wool", value: "wool", price: 0 },
-        { id: "cashmere", name: "Cashmere", value: "cashmere", price: 200 },
-        { id: "tweed", name: "Tweed", value: "tweed", price: 50 },
-        { id: "velvet", name: "Velvet", value: "velvet", price: 75 },
-        { id: "linen", name: "Linen", value: "linen", price: 30 },
-        { id: "wool-silk", name: "Wool-Silk Blend", value: "wool-silk", price: 100 },
+        { 
+          id: "wool-blend", 
+          name: "Wool Blend", 
+          value: "wool-blend", 
+          price: 0,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Wool"
+        },
+        { 
+          id: "premium-wool", 
+          name: "Premium Wool", 
+          value: "premium-wool", 
+          price: 50,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Premium"
+        },
+        { 
+          id: "cashmere-blend", 
+          name: "Cashmere Blend", 
+          value: "cashmere-blend", 
+          price: 120,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Cashmere"
+        },
+        { 
+          id: "summer-wool", 
+          name: "Summer Wool", 
+          value: "summer-wool", 
+          price: 30,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Summer"
+        },
+        { 
+          id: "tweed", 
+          name: "Tweed", 
+          value: "tweed", 
+          price: 80,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Tweed"
+        },
+        { 
+          id: "linen-blend", 
+          name: "Linen Blend", 
+          value: "linen-blend", 
+          price: 40,
+          thumbnail: "/placeholder.svg?height=60&width=60&text=Linen"
+        },
+      ],
+    },
+    {
+      id: "fabric-color",
+      name: "Select Fabric Color",
+      type: "color" as const,
+      category: "fabric",
+      values: [
+        { id: "charcoal", name: "Charcoal", value: "#36454F", price: 0, color: "#36454F" },
+        { id: "navy", name: "Navy", value: "#000080", price: 0, color: "#000080" },
+        { id: "black", name: "Black", value: "#000000", price: 0, color: "#000000" },
+        { id: "brown", name: "Brown", value: "#8B4513", price: 0, color: "#8B4513" },
+        { id: "gray", name: "Gray", value: "#808080", price: 0, color: "#808080" },
+        { id: "light-gray", name: "Light Gray", value: "#D3D3D3", price: 0, color: "#D3D3D3" },
+        { id: "forest-green", name: "Forest Green", value: "#228B22", price: 5, color: "#228B22" },
+        { id: "beige", name: "Beige", value: "#F5F5DC", price: 0, color: "#F5F5DC" },
+        { id: "camel", name: "Camel", value: "#C19A6B", price: 5, color: "#C19A6B" },
+        { id: "light-blue", name: "Light Blue", value: "#ADD8E6", price: 5, color: "#ADD8E6" },
+        { id: "white", name: "White", value: "#FFFFFF", price: 0, color: "#FFFFFF" },
       ],
     },
     {
@@ -355,52 +395,11 @@ export const SAMPLE_PRODUCTS_WITH_CUSTOMIZATION = {
     {
       id: "embroidered-monogram",
       name: "Embroidered Monogram",
-      type: "component" as const,
+      type: "custom" as const,
       category: "personalization",
+      customComponent: "monogram-configurator",
       values: [
-        { id: "no-monogram", name: "No Monogram", value: "none", price: 0 },
-        { id: "chest-monogram", name: "Chest Monogram", value: "chest", price: 25 },
-        { id: "inside-pocket", name: "Inside Pocket Monogram", value: "inside-pocket", price: 20 },
-        { id: "cuff-monogram", name: "Cuff Monogram", value: "cuff", price: 30 },
-        { id: "lining-monogram", name: "Lining Monogram", value: "lining", price: 35 },
-      ],
-    },
-    {
-      id: "monogram-text",
-      name: "Monogram Text",
-      type: "component" as const,
-      category: "personalization",
-      values: [
-        { id: "custom-text", name: "Custom Text (1-4 characters)", value: "custom", price: 0 },
-      ],
-    },
-    {
-      id: "monogram-style",
-      name: "Monogram Style",
-      type: "component" as const,
-      category: "personalization",
-      values: [
-        { id: "classic-serif", name: "Classic Serif", value: "classic-serif", price: 0, thumbnail: "/images/monogram/classic-serif.png" },
-        { id: "modern-sans", name: "Modern Sans", value: "modern-sans", price: 5, thumbnail: "/images/monogram/modern-sans.png" },
-        { id: "script-elegant", name: "Elegant Script", value: "script-elegant", price: 10, thumbnail: "/images/monogram/script-elegant.png" },
-        { id: "block-bold", name: "Bold Block", value: "block-bold", price: 5, thumbnail: "/images/monogram/block-bold.png" },
-        { id: "vintage-ornate", name: "Vintage Ornate", value: "vintage-ornate", price: 15, thumbnail: "/images/monogram/vintage-ornate.png" },
-      ],
-    },
-    {
-      id: "monogram-color",
-      name: "Monogram Thread Color",
-      type: "color" as const,
-      category: "personalization",
-      values: [
-        { id: "navy", name: "Navy", value: "#1565C0", price: 0, color: "#1565C0" },
-        { id: "black", name: "Black", value: "#000000", price: 0, color: "#000000" },
-        { id: "white", name: "White", value: "#FFFFFF", price: 0, color: "#FFFFFF" },
-        { id: "gold", name: "Gold", value: "#FFD700", price: 10, color: "#FFD700" },
-        { id: "silver", name: "Silver", value: "#C0C0C0", price: 8, color: "#C0C0C0" },
-        { id: "burgundy", name: "Burgundy", value: "#8E24AA", price: 5, color: "#8E24AA" },
-        { id: "forest", name: "Forest Green", value: "#2E7D32", price: 5, color: "#2E7D32" },
-        { id: "royal-blue", name: "Royal Blue", value: "#4169E1", price: 5, color: "#4169E1" },
+        { id: "configure-monogram", name: "Configure Monogram", value: "configure", price: 0 },
       ],
     },
   ],

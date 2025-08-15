@@ -237,15 +237,40 @@ function CustomizableModel({
       parts["pocket_double_right"] = doublePocket2
       meshRef.current.add(doublePocket2)
 
-      // ENHANCED BUTTON SYSTEM with style, color, and material support
+      // ENHANCED BUTTON SYSTEM with comprehensive style, color, and configuration support
       const buttonColor = customizations.buttonColor || customizations.button_color || "#F5E6D3"
-      const buttonStyle = customizations.buttonStyle || customizations.button_style || "classic-round"
-      const buttonMaterial = customizations.buttonMaterial || customizations.button_material || "horn"
+      const buttonStyle = customizations.buttonStyle || customizations.buttonstyle || customizations.button_style || customizations.buttons || "classic-round"
+      const buttonMaterial = customizations.buttonMaterial || customizations.buttonmaterial || customizations.button_material || "horn"
+      const buttonConfiguration = customizations.buttonConfiguration || customizations.buttonconfig || customizations.button_configuration || customizations.buttons || "two-button"
+      const buttonSize = customizations.buttonSize || customizations.buttonsize || customizations.button_size || "standard"
+      const buttonType = customizations.buttonType || customizations.buttontype || customizations.button_type || "standard"
+      
+      console.log("Button customizations:", {
+        color: buttonColor,
+        style: buttonStyle,
+        material: buttonMaterial,
+        configuration: buttonConfiguration,
+        size: buttonSize,
+        type: buttonType,
+        rawButtons: customizations.buttons,
+        allCustomizations: customizations
+      })
+      
+      // Remove existing buttons first to prevent duplicates
+      const existingButtons = Object.keys(parts).filter(key => key.startsWith('jacket_button_'))
+      existingButtons.forEach(buttonKey => {
+        if (parts[buttonKey] && meshRef.current) {
+          meshRef.current.remove(parts[buttonKey])
+          delete parts[buttonKey]
+        }
+      })
       
       // Create material based on button material and color
       const createButtonMaterial = (materialType: string, color: string) => {
-        switch (materialType) {
+        switch (materialType.toLowerCase()) {
           case "mother-of-pearl":
+          case "mother_of_pearl":
+          case "pearl":
             return new THREE.MeshStandardMaterial({
               color: color,
               roughness: 0.1,
@@ -254,22 +279,41 @@ function CustomizableModel({
               opacity: 0.9,
             })
           case "metal":
+          case "brass":
+          case "silver":
+          case "gold":
             return new THREE.MeshStandardMaterial({
               color: color,
               roughness: 0.2,
               metalness: 0.9,
             })
           case "horn":
+          case "natural":
             return new THREE.MeshStandardMaterial({
               color: color,
               roughness: 0.4,
               metalness: 0.1,
             })
           case "corozo":
+          case "tagua":
             return new THREE.MeshStandardMaterial({
               color: color,
               roughness: 0.6,
               metalness: 0.2,
+            })
+          case "plastic":
+          case "resin":
+            return new THREE.MeshStandardMaterial({
+              color: color,
+              roughness: 0.3,
+              metalness: 0.0,
+            })
+          case "wood":
+          case "wooden":
+            return new THREE.MeshStandardMaterial({
+              color: color,
+              roughness: 0.8,
+              metalness: 0.0,
             })
           default:
             return new THREE.MeshStandardMaterial({
@@ -280,45 +324,82 @@ function CustomizableModel({
         }
       }
 
-      // Create button geometry based on style
-      const createButtonGeometry = (style: string) => {
-        switch (style) {
+      // Create button geometry based on style and size
+      const createButtonGeometry = (style: string, size: string) => {
+        // Base sizes
+        let baseRadius = 0.05
+        let baseHeight = 0.02
+        
+        // Adjust for size
+        switch (size.toLowerCase()) {
+          case "small":
+            baseRadius = 0.04
+            baseHeight = 0.018
+            break
+          case "large":
+            baseRadius = 0.06
+            baseHeight = 0.025
+            break
+          case "extra-large":
+          case "xl":
+            baseRadius = 0.07
+            baseHeight = 0.028
+            break
+          default: // standard
+            baseRadius = 0.05
+            baseHeight = 0.02
+        }
+        
+        switch (style.toLowerCase()) {
           case "classic-round":
-            return new THREE.CylinderGeometry(0.05, 0.05, 0.02, 16)
+          case "classic":
+          case "round":
+            return new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight, 16)
           case "beveled-edge":
-            const beveledGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.025, 16)
-            // Add beveled edge effect by creating a slightly smaller top
-            return new THREE.CylinderGeometry(0.048, 0.05, 0.025, 16)
+          case "beveled":
+            return new THREE.CylinderGeometry(baseRadius * 0.96, baseRadius, baseHeight * 1.25, 16)
           case "flat-modern":
-            return new THREE.CylinderGeometry(0.05, 0.05, 0.015, 16)
+          case "flat":
+          case "modern":
+            return new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight * 0.75, 16)
           case "domed":
-            // Create domed shape using sphere geometry
-            const domeGeometry = new THREE.SphereGeometry(0.05, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
-            return domeGeometry
+          case "dome":
+            return new THREE.SphereGeometry(baseRadius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
           case "vintage-shank":
-            const shankGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.03, 16)
-            return shankGeometry
+          case "vintage":
+          case "shank":
+            return new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight * 1.5, 16)
           case "square-modern":
-            return new THREE.BoxGeometry(0.1, 0.1, 0.02)
+          case "square":
+            return new THREE.BoxGeometry(baseRadius * 2, baseRadius * 2, baseHeight)
+          case "rectangle":
+          case "rectangular":
+            return new THREE.BoxGeometry(baseRadius * 2.4, baseRadius * 1.6, baseHeight)
+          case "oval":
+            const ovalGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight, 16)
+            ovalGeometry.scale(1.2, 1, 0.8)
+            return ovalGeometry
+          case "toggle":
+            return new THREE.BoxGeometry(baseRadius * 3, baseRadius * 0.8, baseHeight * 2)
           default:
-            return new THREE.CylinderGeometry(0.05, 0.05, 0.02, 16)
+            return new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight, 16)
         }
       }
 
       // Create buttons with the selected style
       const selectedButtonMaterial = createButtonMaterial(buttonMaterial, buttonColor)
-      const selectedButtonGeometry = createButtonGeometry(buttonStyle)
+      const selectedButtonGeometry = createButtonGeometry(buttonStyle, buttonSize)
       
       // Add special effects for certain button styles
       const addButtonDetails = (button: THREE.Mesh, style: string) => {
-        if (style === "vintage-shank") {
+        if (style.includes("vintage") || style.includes("shank")) {
           // Add center hole for shank buttons
           const holeGeometry = new THREE.CylinderGeometry(0.008, 0.008, 0.035, 8)
           const holeMaterial = new THREE.MeshStandardMaterial({ color: "#000000" })
           const hole = new THREE.Mesh(holeGeometry, holeMaterial)
           hole.position.set(0, 0, 0)
           button.add(hole)
-        } else if (style === "beveled-edge") {
+        } else if (style.includes("beveled")) {
           // Add rim highlight for beveled buttons
           const rimGeometry = new THREE.TorusGeometry(0.045, 0.005, 8, 16)
           const rimMaterial = new THREE.MeshStandardMaterial({ 
@@ -330,7 +411,7 @@ function CustomizableModel({
           rim.rotation.x = Math.PI / 2
           rim.position.set(0, 0.015, 0)
           button.add(rim)
-        } else if (style === "domed") {
+        } else if (style.includes("domed") || style.includes("dome")) {
           // Add highlight for domed buttons
           const highlightGeometry = new THREE.SphereGeometry(0.02, 8, 4, 0, Math.PI * 2, 0, Math.PI / 3)
           const highlightMaterial = new THREE.MeshStandardMaterial({ 
@@ -344,24 +425,88 @@ function CustomizableModel({
         }
       }
 
-      // Create jacket buttons (2-4 buttons based on configuration)
-      const buttonCount = customizations.buttonConfiguration === "one-button" ? 1 : 
-                         customizations.buttonConfiguration === "three-button" ? 3 :
-                         customizations.buttonConfiguration === "four-button" ? 4 : 2
+      // Determine button count based on configuration
+      const getButtonCount = (config: string) => {
+        const configLower = config.toLowerCase()
+        if (configLower.includes("one") || configLower.includes("1") || configLower.includes("single")) return 1
+        if (configLower.includes("three") || configLower.includes("3")) return 3
+        if (configLower.includes("four") || configLower.includes("4")) return 4
+        if (configLower.includes("five") || configLower.includes("5")) return 5
+        if (configLower.includes("six") || configLower.includes("6") || configLower.includes("double-breasted")) return 6
+        if (configLower.includes("two") || configLower.includes("2") || configLower.includes("double")) return 2
+        
+        // Handle specific jacket configurations
+        if (configLower.includes("one-button") || configLower.includes("1-button")) return 1
+        if (configLower.includes("two-button") || configLower.includes("2-button")) return 2
+        if (configLower.includes("three-button") || configLower.includes("3-button")) return 3
+        if (configLower.includes("four-button") || configLower.includes("4-button")) return 4
+        if (configLower.includes("six-button") || configLower.includes("6-button")) return 6
+        
+        return 2 // Default two-button
+      }
+
+      // Create jacket buttons based on configuration
+      const buttonCount = getButtonCount(buttonConfiguration)
+      console.log(`Creating ${buttonCount} buttons for configuration: ${buttonConfiguration}`)
+      
+      // Enhanced button positioning system
+      const getButtonPositions = (count: number, config: string) => {
+        const positions: Array<{x: number, y: number, z: number}> = []
+        const configLower = config.toLowerCase()
+        
+        if (count === 1) {
+          // Single button - center position
+          positions.push({x: 0, y: 0.2, z: 0.16})
+        } else if (count === 2) {
+          // Two button - classic spacing
+          positions.push({x: 0, y: 0.4, z: 0.16})
+          positions.push({x: 0, y: 0, z: 0.16})
+        } else if (count === 3) {
+          // Three button - traditional spacing
+          positions.push({x: 0, y: 0.6, z: 0.16})
+          positions.push({x: 0, y: 0.3, z: 0.16})
+          positions.push({x: 0, y: 0, z: 0.16})
+        } else if (count === 4) {
+          // Four button - closer spacing
+          positions.push({x: 0, y: 0.6, z: 0.16})
+          positions.push({x: 0, y: 0.35, z: 0.16})
+          positions.push({x: 0, y: 0.1, z: 0.16})
+          positions.push({x: 0, y: -0.15, z: 0.16})
+        } else if (count === 5) {
+          // Five button - very close spacing
+          positions.push({x: 0, y: 0.7, z: 0.16})
+          positions.push({x: 0, y: 0.45, z: 0.16})
+          positions.push({x: 0, y: 0.2, z: 0.16})
+          positions.push({x: 0, y: -0.05, z: 0.16})
+          positions.push({x: 0, y: -0.3, z: 0.16})
+        } else if (count === 6) {
+          // Double-breasted - two columns
+          if (configLower.includes("double-breasted")) {
+            positions.push({x: -0.15, y: 0.8, z: 0.16})
+            positions.push({x: 0.15, y: 0.8, z: 0.16})
+            positions.push({x: -0.15, y: 0.5, z: 0.16})
+            positions.push({x: 0.15, y: 0.5, z: 0.16})
+            positions.push({x: -0.15, y: 0.2, z: 0.16})
+            positions.push({x: 0.15, y: 0.2, z: 0.16})
+          } else {
+            // Six buttons in single column
+            for (let i = 0; i < 6; i++) {
+              positions.push({x: 0, y: 0.9 - i * 0.22, z: 0.16})
+            }
+          }
+        }
+        
+        return positions
+      }
+      
+      const buttonPositions = getButtonPositions(buttonCount, buttonConfiguration)
       
       for (let i = 0; i < buttonCount; i++) {
-        const button = new THREE.Mesh(selectedButtonGeometry.clone(), selectedButtonMaterial)
+        const button = new THREE.Mesh(selectedButtonGeometry.clone(), selectedButtonMaterial.clone())
         
-        // Position buttons based on jacket style
-        if (buttonCount === 1) {
-          button.position.set(0, 0.2, 0.16)
-        } else if (buttonCount === 2) {
-          button.position.set(0, 0.4 - i * 0.4, 0.16)
-        } else if (buttonCount === 3) {
-          button.position.set(0, 0.6 - i * 0.3, 0.16)
-        } else if (buttonCount === 4) {
-          // Double-breasted style
-          button.position.set(i % 2 === 0 ? -0.1 : 0.1, 0.6 - Math.floor(i / 2) * 0.4, 0.16)
+        // Set position from calculated positions
+        if (buttonPositions[i]) {
+          button.position.set(buttonPositions[i].x, buttonPositions[i].y, buttonPositions[i].z)
         }
         
         addButtonDetails(button, buttonStyle)
@@ -374,7 +519,20 @@ function CustomizableModel({
       const monogramData = customizations.monogramData ? JSON.parse(customizations.monogramData) : null
       const monogramText = monogramData?.text || customizations.monogramText || ""
       const monogramPosition = monogramData?.position || customizations.monogramPosition || "no-monogram"
-      const monogramColor = monogramData?.color || customizations.monogramColor || "#1565C0"
+      
+      // Use thread color specifically for monogram - prioritize threadColor over general color
+      const monogramColor = customizations.monogramThreadColor || 
+                           monogramData?.threadColor || 
+                           monogramData?.color || 
+                           customizations.monogramColor || 
+                           "#1565C0"
+      
+      console.log("Displaying monogram:", {
+        text: monogramText,
+        position: monogramPosition,
+        color: monogramColor,
+        visible: !!(monogramText && monogramPosition !== "no-monogram")
+      })
       
       if (monogramText && monogramPosition !== "no-monogram") {
         const monogramMaterial = new THREE.MeshStandardMaterial({
@@ -883,18 +1041,6 @@ function CustomizableModel({
   return <group ref={meshRef} />
 }
 
-// Loading component
-function LoadingSpinner() {
-  return (
-    <Html center>
-      <div className="flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <div className="text-gray-600">Loading 3D Model...</div>
-      </div>
-    </Html>
-  )
-}
-
 // Camera controller
 function CameraController() {
   const { camera } = useThree()
@@ -971,7 +1117,7 @@ export function ModelViewer({
         />
 
         {/* 3D Model */}
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={null}>
           <CustomizableModel modelType={modelType} customizations={customizations} layerControls={layerControls} />
         </Suspense>
 

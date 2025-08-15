@@ -9,7 +9,8 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductById(params.id)
+  const resolvedParams = await params
+  const product = await getProductById(resolvedParams.id)
 
   if (!product) {
     notFound()
@@ -38,7 +39,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <UniversalConfigurator
         productId={product.id}
         productName={product.name}
-        basePrice={product.price}
+        basePrice={product.basePrice}
         productType={getProductType()}
       />
     </div>

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,6 +17,8 @@ import {
   Heart,
   Star,
   Ruler,
+  Menu,
+  X,
 } from "lucide-react"
 import { ModelViewer } from "@/components/3d-model-viewer"
 import { motion, AnimatePresence } from "framer-motion"
@@ -25,9 +26,9 @@ import { getCustomizationOptions } from "@/lib/firebase/unified-product-service"
 import { MeasurementStep } from "./steps/measurement-step"
 import { JacketLiningStep } from "./steps/jacket-lining-step"
 import { CheckoutModal } from "./checkout-modal"
-import { ButtonStyleSelector } from "./button-style-selector"
-import { ButtonConfiguration } from "./button-configuration"
-import { MonogramConfigurator } from "./monogram-configurator"
+import { MonogramConfigurator } from "./monogram-configurator-professional"
+import { FabricTypeSelector } from "./fabric-type-selector"
+import { FabricColorSelector } from "./fabric-color-selector"
 
 interface UniversalConfiguratorProps {
   productId: string
@@ -76,6 +77,7 @@ interface MeasurementData {
   sizeType: "standard" | "custom"
   standardSize?: string
   fitType?: string
+  customMeasurementMethod?: "videos" | "sketches"
   customMeasurements?: {
     neck: number
     chest: number
@@ -120,14 +122,6 @@ export function UniversalConfigurator({
     monogramFont: "england" as "england" | "arial",
     threadColor: "navy",
   })
-  const [buttonData, setButtonData] = useState({
-    style: "classic-round",
-    color: "natural",
-    material: "horn",
-  })
-  const [buttonConfigData, setButtonConfigData] = useState({
-    configuration: "two-button",
-  })
   const [monogramData, setMonogramData] = useState({
     text: "",
     position: "no-monogram",
@@ -137,6 +131,7 @@ export function UniversalConfigurator({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   // Load customization options
   useEffect(() => {
@@ -172,9 +167,9 @@ export function UniversalConfigurator({
   const currentStepData = customizationOptions[currentStep]
   const isMeasurementStep = currentStep === customizationOptions.length
   const isJacketLiningStep = currentStepData?.type === "custom" && currentStepData?.customComponent === "jacket-lining"
-  const isButtonStep = currentStepData?.id === "button-style" || currentStepData?.id === "button-color"
-  const isButtonConfigStep = currentStepData?.id === "button-configuration"
-  const isMonogramStep = currentStepData?.id === "embroidered-monogram" || currentStepData?.id === "monogram-text" || currentStepData?.id === "monogram-style" || currentStepData?.id === "monogram-color"
+  const isMonogramStep = currentStepData?.id === "embroidered-monogram" || currentStepData?.customComponent === "monogram-configurator"
+  const isFabricTypeStep = currentStepData?.id === "fabric-type"
+  const isFabricColorStep = currentStepData?.id === "fabric-color"
 
   // Calculate total price including measurement surcharge
   const calculatePrice = () => {
@@ -232,17 +227,21 @@ export function UniversalConfigurator({
     layerControls?: any,
   ) => {
     console.log(`Selecting option: ${optionId}, value: ${value}, color: ${color}`)
-    setConfiguratorState((prev) => ({
-      ...prev,
-      [optionId]: {
-        optionId,
-        valueId,
-        price: price || 0,
-        value,
-        color,
-        layerControls,
-      },
-    }))
+    setConfiguratorState((prev) => {
+      const newState = {
+        ...prev,
+        [optionId]: {
+          optionId,
+          valueId,
+          price: price || 0,
+          value,
+          color,
+          layerControls,
+        },
+      }
+      console.log("Updated configurator state:", newState)
+      return newState
+    })
   }
 
   const updateMeasurementData = (updates: Partial<MeasurementData>) => {
@@ -251,14 +250,6 @@ export function UniversalConfigurator({
 
   const updateJacketLiningData = (updates: any) => {
     setJacketLiningData((prev) => ({ ...prev, ...updates }))
-  }
-
-  const updateButtonData = (updates: any) => {
-    setButtonData((prev) => ({ ...prev, ...updates }))
-  }
-
-  const updateButtonConfigData = (updates: any) => {
-    setButtonConfigData((prev) => ({ ...prev, ...updates }))
   }
 
   const updateMonogramData = (updates: any) => {
@@ -271,12 +262,6 @@ export function UniversalConfigurator({
       if (option?.type === "custom" && option?.customComponent === "jacket-lining") {
         // Jacket lining step is completed if a lining type is selected
         return jacketLiningData.liningType !== "none"
-      }
-      if (option?.id === "button-style") {
-        return buttonData.style !== ""
-      }
-      if (option?.id === "button-color") {
-        return buttonData.color !== ""
       }
       if (option?.id === "embroidered-monogram") {
         return monogramData.position !== ""
@@ -321,11 +306,18 @@ export function UniversalConfigurator({
       const value = option?.values.find((val) => val.id === selection.valueId)
 
       if (value && option) {
-        // Handle colors but NOT for button color changes
-        const colorValue = selection.color || value.color
-        const optionNameLower = option.name.toLowerCase().replace(/\s+/g, "")
-        
-        if (colorValue && !optionNameLower.includes("button")) {
+        // Handle fabric colors specifically
+        if (option.id === "fabric-color" && selection.color) {
+          customizations.color = selection.color
+          customizations.fabricColor = selection.color
+          customizations.mainColor = selection.color
+          console.log("Setting fabric color:", selection.color)
+        }
+        // Handle other colors but NOT for button color changes or monogram thread color
+        else if (selection.color && !option.name.toLowerCase().includes("button") && !option.name.toLowerCase().includes("monogram")) {
+          const colorValue = selection.color || value.color
+          const optionNameLower = option.name.toLowerCase().replace(/\s+/g, "")
+          
           customizations.color = colorValue
           customizations.fabricColor = colorValue
 
@@ -350,86 +342,186 @@ export function UniversalConfigurator({
           }
         }
 
-        // Handle fabric types
-        if (option.type === "texture") {
-          customizations.fabrictype = value.value
+        // Handle button colors specifically (don't affect garment color)
+        if (option.name.toLowerCase().includes("button") && selection.color) {
+          customizations.buttonColor = selection.color
+          console.log("Setting button color:", selection.color)
         }
 
-        // Handle ALL style customizations by mapping option names to customization keys
-        if (optionNameLower.includes("collar")) {
-          customizations.collarstyle = value.value
-        } else if (optionNameLower.includes("cuff")) {
-          customizations.cuffstyle = value.value
-        } else if (optionNameLower.includes("pocket")) {
-          customizations.pocketstyle = value.value
-        } else if (optionNameLower.includes("button") && optionNameLower.includes("style")) {
-          customizations.buttonstyle = value.value
-        } else if (optionNameLower.includes("button") && optionNameLower.includes("configuration")) {
+        // Handle monogram thread color specifically (don't affect garment color)
+        if (option.name.toLowerCase().includes("monogram") && option.name.toLowerCase().includes("color")) {
+          customizations.monogramThreadColor = selection.color || value.color
+          console.log("Setting monogram thread color:", selection.color || value.color)
+        }
+
+        // Handle fabric types
+        if (option.type === "texture" || option.id === "fabric-type") {
+          customizations.fabrictype = value.value
+          console.log("Setting fabric type:", value.value)
+        }
+
+        // Handle jacket-specific customizations
+        if (option.id === "jacket-style") {
+          customizations.jacketStyle = value.value
+        } else if (option.id === "lapel-style") {
+          customizations.lapelstyle = value.value
+        } else if (option.id === "button-configuration") {
           customizations.buttonConfiguration = value.value
+          customizations.buttonconfig = value.value // Alternative naming
+        } else if (option.id === "button-style") {
+          customizations.buttonstyle = value.value
+          customizations.buttonStyle = value.value // Camel case version
+        } else if (option.id === "pocket-style") {
+          customizations.pocketstyle = value.value
+        } else if (option.id === "vent-style") {
+          customizations.ventstyle = value.value
+        } else if (option.id === "shoulder-style") {
+          customizations.shoulderstyle = value.value
+        }
+
+        // Handle ALL other style customizations by mapping option names to customization keys
+        const optionNameLower = option.name.toLowerCase().replace(/\s+/g, "")
+        const optionId = option.id.toLowerCase()
+        
+        if (optionNameLower.includes("collar") && !optionNameLower.includes("color")) {
+          customizations.collarstyle = value.value
+          customizations.collar = value.value
+        } else if (optionNameLower.includes("cuff") && !optionNameLower.includes("color")) {
+          customizations.cuffstyle = value.value
+          customizations.cuff = value.value
         } else if (optionNameLower.includes("fit")) {
           customizations.fitstyle = value.value
-        } else if (optionNameLower.includes("monogram")) {
+          customizations.fit = value.value
+        } else if (optionNameLower.includes("monogram") && !optionNameLower.includes("color")) {
           customizations.monogram = value.value
         } else if (optionNameLower.includes("waistband")) {
           customizations.waistbandstyle = value.value
+          customizations.waistband = value.value
         } else if (optionNameLower.includes("hem")) {
           customizations.hemstyle = value.value
+          customizations.hem = value.value
         } else if (optionNameLower.includes("belt")) {
           customizations.beltloops = value.value
+          customizations.belt = value.value
         } else if (optionNameLower.includes("lapel")) {
           customizations.lapelstyle = value.value
+          customizations.lapel = value.value
         } else if (optionNameLower.includes("vent")) {
           customizations.ventstyle = value.value
+          customizations.vent = value.value
         } else if (optionNameLower.includes("lining")) {
           customizations.liningstyle = value.value
+          customizations.lining = value.value
         } else if (optionNameLower.includes("sleeve") && optionNameLower.includes("button")) {
           customizations.sleevebuttonstyle = value.value
+          customizations.sleevebutton = value.value
+        }
+
+        // Enhanced button handling for ALL button-related configurations
+        if (optionNameLower.includes("button") && !optionNameLower.includes("color")) {
+          // Map different button option types with comprehensive coverage
+          if (optionId.includes("configuration") || optionNameLower.includes("configuration")) {
+            customizations.buttonConfiguration = value.value
+            customizations.buttonconfig = value.value
+            customizations.buttons = value.value // For generic button display
+            console.log(`Setting button configuration: ${value.value}`)
+          } else if (optionId.includes("style") || optionNameLower.includes("style")) {
+            customizations.buttonstyle = value.value
+            customizations.buttonStyle = value.value
+            customizations.buttons = value.value // For style changes
+            console.log(`Setting button style: ${value.value}`)
+          } else if (optionId.includes("count") || optionNameLower.includes("count")) {
+            customizations.buttonCount = value.value
+            customizations.buttoncount = value.value
+            customizations.buttons = value.value // For count changes
+            console.log(`Setting button count: ${value.value}`)
+          } else if (optionId.includes("material") || optionNameLower.includes("material")) {
+            customizations.buttonMaterial = value.value
+            customizations.buttonmaterial = value.value
+            customizations.buttons = value.value // For material changes
+            console.log(`Setting button material: ${value.value}`)
+          } else if (optionId.includes("size") || optionNameLower.includes("size")) {
+            customizations.buttonSize = value.value
+            customizations.buttonsize = value.value
+            customizations.buttons = value.value // For size changes
+            console.log(`Setting button size: ${value.value}`)
+          } else if (optionId.includes("type") || optionNameLower.includes("type")) {
+            customizations.buttonType = value.value
+            customizations.buttontype = value.value
+            customizations.buttons = value.value // For type changes
+            console.log(`Setting button type: ${value.value}`)
+          } else {
+            // Generic button setting - catch all button configurations
+            customizations.button = value.value
+            customizations.buttons = value.value
+            customizations.buttonConfiguration = value.value // Default to configuration
+            console.log(`Setting generic button customization: ${value.value}`)
+          }
+          
+          // Ensure button customizations are always applied to the 3D model
+          customizations.updateButtons = true
+          customizations.buttonConfigUpdate = Date.now() // Force update
+        }
+
+        // Enhanced pocket handling
+        if (optionNameLower.includes("pocket") && !optionNameLower.includes("color")) {
+          if (optionId.includes("style") || optionNameLower.includes("style")) {
+            customizations.pocketstyle = value.value
+            customizations.pocketStyle = value.value
+          } else if (optionId.includes("type") || optionNameLower.includes("type")) {
+            customizations.pocketType = value.value
+            customizations.pockettype = value.value
+          } else {
+            customizations.pocket = value.value
+            customizations.pockets = value.value
+          }
+          console.log(`Setting pocket customization: ${optionId} = ${value.value}`)
+        }
+
+        // Generic value assignment for any unhandled options
+        if (!customizations[optionId] && value.value) {
+          customizations[optionId] = value.value
+          customizations[optionNameLower] = value.value
+          console.log(`Setting generic customization: ${optionId} = ${value.value}`)
         }
       }
     })
 
-    // Add button customizations
-    if (buttonData.style || buttonData.color || buttonData.material) {
-      customizations.buttonStyle = buttonData.style
-      customizations.button_style = buttonData.style
-      customizations.buttonColor = getButtonColorValue(buttonData.color)
-      customizations.button_color = getButtonColorValue(buttonData.color)
-      customizations.buttonMaterial = buttonData.material
-      customizations.button_material = buttonData.material
-    }
-
-    // Add button configuration
-    if (buttonConfigData.configuration) {
-      customizations.buttonConfiguration = buttonConfigData.configuration
-    }
-
-    // Add monogram customizations
+    // Add monogram customizations with proper thread color handling
     if (monogramData.text && monogramData.position !== "no-monogram") {
       customizations.monogramText = monogramData.text
       customizations.monogramPosition = monogramData.position
-      customizations.monogramColor = getMonogramColorValue(monogramData.color)
-      customizations.monogramData = JSON.stringify(monogramData)
+      
+      // Use monogram thread color from monogramData (selected in MonogramConfigurator)
+      const threadColor = monogramData.color || getMonogramColorValue(monogramData.color) || "#1565C0"
+      
+      customizations.monogramColor = threadColor
+      customizations.monogramThreadColor = threadColor
+      customizations.monogramStyle = monogramData.style || "classic-serif"
+      customizations.monogramData = JSON.stringify({
+        ...monogramData,
+        threadColor: threadColor
+      })
+      
+      // Ensure monogram is visible
+      customizations.showMonogram = true
+      customizations.monogramVisible = true
+      
+      console.log("Setting monogram:", {
+        text: monogramData.text,
+        position: monogramData.position,
+        threadColor: threadColor,
+        style: monogramData.style
+      })
+    } else {
+      // Hide monogram if no text or position is "no-monogram"
+      customizations.showMonogram = false
+      customizations.monogramVisible = false
     }
 
     console.log("Generated customizations for 3D model:", customizations)
     return customizations
   }
-
-  // Helper function to get button color value
-  const getButtonColorValue = (colorId: string) => {
-    const colorMap: Record<string, string> = {
-      "natural": "#F5E6D3",
-      "dark-brown": "#4A2C2A",
-      "black": "#1A1A1A",
-      "navy": "#1565C0",
-      "gold": "#FFD700",
-      "silver": "#C0C0C0",
-      "bronze": "#CD7F32",
-      "pearl-white": "#F8F8FF",
-    }
-    return colorMap[colorId] || "#F5E6D3"
-  }
-
   // Helper function to get monogram color value
   const getMonogramColorValue = (colorId: string) => {
     const colorMap: Record<string, string> = {
@@ -512,6 +604,80 @@ export function UniversalConfigurator({
     setShowCheckoutModal(true)
   }
 
+  // Fabric helper functions
+  const getFabricDescription = (fabricId: string): string => {
+    const descriptions: { [key: string]: string } = {
+      "wool-blend": "Classic business fabric - Perfect for year-round wear",
+      "premium-wool": "Luxury Italian wool - Superior drape and comfort",
+      "cashmere-blend": "Ultra-soft cashmere blend - Ultimate luxury",
+      "summer-wool": "Lightweight tropical wool - Breathable and cool",
+      "tweed": "Traditional textured wool - Heritage style",
+      "linen-blend": "Light summer fabric - Natural breathability"
+    }
+    return descriptions[fabricId] || "Premium fabric option"
+  }
+
+  const getFabricWeight = (fabricId: string): string => {
+    const weights: { [key: string]: string } = {
+      "wool-blend": "Medium weight",
+      "premium-wool": "Medium-heavy weight",
+      "cashmere-blend": "Light-medium weight", 
+      "summer-wool": "Lightweight",
+      "tweed": "Heavy weight",
+      "linen-blend": "Very lightweight"
+    }
+    return weights[fabricId] || "Medium weight"
+  }
+
+  const getFabricSeason = (fabricId: string): string => {
+    const seasons: { [key: string]: string } = {
+      "wool-blend": "All seasons",
+      "premium-wool": "Fall/Winter",
+      "cashmere-blend": "Fall/Winter/Spring",
+      "summer-wool": "Spring/Summer",
+      "tweed": "Fall/Winter",
+      "linen-blend": "Spring/Summer"
+    }
+    return seasons[fabricId] || "All seasons"
+  }
+
+  const getFabricAvailableColors = (fabricId: string): string[] => {
+    const fabricColors: { [key: string]: string[] } = {
+      "wool-blend": ["charcoal", "navy", "black", "brown", "gray"],
+      "premium-wool": ["charcoal", "navy", "black", "brown"],
+      "cashmere-blend": ["charcoal", "navy", "brown", "camel"],
+      "summer-wool": ["light-gray", "navy", "charcoal", "beige"],
+      "tweed": ["brown", "gray", "forest-green"],
+      "linen-blend": ["beige", "light-blue", "white", "light-gray"]
+    }
+    return fabricColors[fabricId] || []
+  }
+
+  const getFilteredColors = () => {
+    const selectedFabricType = configuratorState["fabric-type"]?.valueId
+    
+    // If no fabric type selected, show all colors
+    if (!selectedFabricType) {
+      return currentStepData?.values.map(v => ({
+        id: v.id,
+        name: v.name,
+        hex: v.color || v.value,
+        fabrics: []
+      })) || []
+    }
+
+    // If fabric type is selected, filter colors
+    const availableColorIds = getFabricAvailableColors(selectedFabricType)
+    return currentStepData?.values
+      .filter(v => availableColorIds.includes(v.id))
+      .map(v => ({
+        id: v.id,
+        name: v.name,
+        hex: v.color || v.value,
+        fabrics: [selectedFabricType]
+      })) || []
+  }
+
   if (loading) {
     return (
       <div className="w-full h-screen bg-gray-50 flex items-center justify-center">
@@ -542,62 +708,84 @@ export function UniversalConfigurator({
 
   return (
     <>
-      <div className="w-full h-screen bg-gray-50 flex">
-        {/* LEFT SIDEBAR - FIXED - Matches Reference Design */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          {/* Sidebar Header - Matches Reference */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{productName}</h1>
-                <p className="text-sm text-gray-600">{Object.keys(configuratorState).length} customizations applied</p>
+      <div className="w-full h-screen bg-gray-50 flex relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* LEFT SIDEBAR - Fully Responsive */}
+        <div className={`
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          fixed lg:relative lg:translate-x-0
+          w-full sm:w-[400px] md:w-[450px] lg:w-[380px] xl:w-[420px] 2xl:w-[480px]
+          h-full bg-white border-r border-gray-200 
+          flex flex-col transition-transform duration-300 ease-in-out z-50
+          shadow-xl lg:shadow-none
+        `}>
+          {/* Mobile Close Button */}
+          <div className="lg:hidden flex justify-between items-center p-4 border-b border-gray-100">
+            <h1 className="text-lg font-semibold text-gray-900 truncate">Customize {productName}</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSidebarOpen(false)}
+              className="h-8 w-8 p-0 flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Sidebar Header - Fully Responsive */}
+          <div className="p-4 sm:p-5 lg:p-6 border-b border-gray-200">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="hidden lg:block text-lg xl:text-xl font-semibold text-gray-900 truncate">{productName}</h1>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  {Object.keys(configuratorState).length} customization{Object.keys(configuratorState).length !== 1 ? 's' : ''} applied
+                </p>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">${currentPrice.toFixed(2)}</div>
-                <Badge variant="outline" className="text-xs mt-1">
+              <div className="text-right flex-shrink-0">
+                <div className="text-xl sm:text-2xl lg:text-xl xl:text-2xl font-bold text-gray-900">
+                  ${currentPrice.toFixed(2)}
+                </div>
+                <Badge variant="outline" className="text-xs mt-1 whitespace-nowrap">
                   Step {currentStep + 1} of {totalSteps}
                 </Badge>
               </div>
             </div>
-
-            {/* Progress Bar */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  {Object.keys(configuratorState).length + (isStepCompleted(customizationOptions.length) ? 1 : 0)} of{" "}
-                  {totalSteps} completed
-                </span>
-                <span className="text-sm text-gray-600">{calculateCompletion()}%</span>
-              </div>
-              <Progress value={calculateCompletion()} className="h-2" />
-            </div>
           </div>
 
-          {/* Current Step Header */}
-          <div className="px-6 py-4 bg-gray-50 border-b">
-            <div className="flex items-center gap-2">
-              {isMeasurementStep ? <Ruler className="w-4 h-4" /> : getCategoryIcon(currentStepData?.category || "")}
-              <h2 className="font-semibold text-gray-900">
+          {/* Current Step Header - Fully Responsive */}
+          <div className="px-4 sm:px-5 lg:px-6 py-3 sm:py-4 bg-gray-50 border-b">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isMeasurementStep ? (
+                <Ruler className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 text-blue-600" />
+              ) : (
+                getCategoryIcon(currentStepData?.category || "")
+              )}
+              <h2 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate flex-1">
                 {isMeasurementStep 
                   ? "Measurements" 
                   : isJacketLiningStep 
                     ? "Lining & Monogram" 
-                    : isButtonStep
-                      ? "Button Customization"
-                      : isMonogramStep
-                        ? "Embroidered Monogram"
+                    : isMonogramStep
+                        ? "Monogram Configuration"
                     : currentStepData?.name || "Customize"}
               </h2>
-              {!isMeasurementStep && !isJacketLiningStep && !isButtonStep && !isMonogramStep && currentStepData && (
-                <Badge variant="secondary" className="text-xs">
-                  {currentStepData.values.length} options
+              {!isMeasurementStep && !isJacketLiningStep && !isMonogramStep && currentStepData && (
+                <Badge variant="secondary" className="text-xs flex-shrink-0 hidden sm:inline-flex">
+                  {currentStepData.values.length} option{currentStepData.values.length !== 1 ? 's' : ''}
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Sidebar Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          {/* Sidebar Content - Fully Responsive with Better Spacing */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6 space-y-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -637,28 +825,6 @@ export function UniversalConfigurator({
                     threadColor={jacketLiningData.threadColor}
                     onUpdate={updateJacketLiningData}
                   />
-                ) : isButtonStep ? (
-                  <ButtonStyleSelector
-                    selectedStyle={buttonData.style}
-                    selectedColor={buttonData.color}
-                    selectedMaterial={buttonData.material}
-                    onStyleChange={(style) => {
-                      updateButtonData({ style })
-                      // Don't call selectOption for button changes to avoid fabric color conflicts
-                    }}
-                    onColorChange={(color) => {
-                      updateButtonData({ color })
-                      // Don't call selectOption for button color changes to avoid fabric color conflicts
-                    }}
-                  />
-                ) : isButtonConfigStep ? (
-                  <ButtonConfiguration
-                    selectedConfiguration={buttonConfigData.configuration}
-                    onConfigurationChange={(config) => {
-                      setButtonConfigData({ configuration: config })
-                      selectOption(currentStepData!.id, config, 0, config)
-                    }}
-                  />
                 ) : isMonogramStep ? (
                   <MonogramConfigurator
                     selectedMonogram={monogramData.position}
@@ -670,107 +836,214 @@ export function UniversalConfigurator({
                       // Don't call selectOption for monogram changes to avoid conflicts
                     }}
                   />
+                ) : isFabricTypeStep ? (
+                  <FabricTypeSelector
+                    selectedFabricType={configuratorState["fabric-type"]?.valueId}
+                    onFabricSelect={(fabricId, price) => {
+                      selectOption(
+                        "fabric-type",
+                        fabricId,
+                        price,
+                        fabricId
+                      )
+                    }}
+                    fabrics={currentStepData.values.map(value => ({
+                      id: value.id,
+                      name: value.name,
+                      price: value.price,
+                      image: value.thumbnail || "/placeholder.svg?height=60&width=60&text=" + value.name.charAt(0),
+                      description: getFabricDescription(value.id),
+                      weight: getFabricWeight(value.id),
+                      season: getFabricSeason(value.id),
+                      availableColors: getFabricAvailableColors(value.id)
+                    }))}
+                  />
+                ) : isFabricColorStep ? (
+                  // Show responsive color grid for fabric colors
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Select Fabric Color</h3>
+                      {configuratorState["fabric-type"] && (
+                        <button
+                          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                          className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm flex items-center gap-1 flex-shrink-0 px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline">Change Fabric</span>
+                          <span className="sm:hidden">Change</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+                      {getFilteredColors().map((color) => (
+                        <div
+                          key={color.id}
+                          onClick={() => {
+                            selectOption(
+                              "fabric-color",
+                              color.id,
+                              0,
+                              color.hex,
+                              color.hex
+                            )
+                          }}
+                          className={`
+                            relative p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-105 hover:shadow-md
+                            ${
+                              configuratorState["fabric-color"]?.valueId === color.id
+                                ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50"
+                                : "border-gray-200 hover:border-gray-300"
+                            }
+                          `}
+                        >
+                          <div className="text-center">
+                            <div
+                              className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg mx-auto mb-2 border border-gray-300 shadow-sm"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <div className="text-xs sm:text-sm font-medium text-gray-900 truncate leading-tight">
+                              {color.name}
+                            </div>
+                          </div>
+                          {configuratorState["fabric-color"]?.valueId === color.id && (
+                            <div className="absolute -top-1 -right-1">
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {getFilteredColors().length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">Please select a fabric type first to see available colors.</p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   currentStepData && (
-                    <div className="space-y-4">
-                      {/* Color Options - Matches Reference Grid Layout */}
+                    <div className="space-y-4 sm:space-y-6">
+                      {/* Color Options - Fully Responsive Grid Layout */}
                       {currentStepData.type === "color" && (
-                        <div className="grid grid-cols-4 gap-3">
-                          {currentStepData.values.map((value) => (
-                            <div
-                              key={value.id}
-                              onClick={() =>
-                                selectOption(
-                                  currentStepData.id,
-                                  value.id,
-                                  value.price,
-                                  value.value,
-                                  value.color || value.value,
-                                  value.layerControls,
-                                )
-                              }
-                              className={`
-                                relative p-2 rounded-lg border-2 cursor-pointer transition-all hover:scale-105
-                                ${
-                                  configuratorState[currentStepData.id]?.valueId === value.id
-                                    ? "border-blue-500 ring-2 ring-blue-200"
-                                    : "border-gray-200 hover:border-gray-300"
+                        <div>
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
+                            Choose {currentStepData.name}
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+                            {currentStepData.values.map((value) => (
+                              <div
+                                key={value.id}
+                                onClick={() =>
+                                  selectOption(
+                                    currentStepData.id,
+                                    value.id,
+                                    value.price,
+                                    value.value,
+                                    value.color || value.value,
+                                    value.layerControls,
+                                  )
                                 }
-                              `}
-                            >
-                              <div className="text-center">
-                                <div
-                                  className="w-12 h-12 rounded-lg mx-auto mb-2 border border-gray-300"
-                                  style={{ backgroundColor: value.color || value.value }}
-                                />
-                                <div className="text-xs font-medium text-gray-900 truncate">{value.name}</div>
-                                {value.price > 0 && (
-                                  <div className="text-xs text-green-600 font-semibold">+${value.price}</div>
+                                className={`
+                                  relative p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-105 hover:shadow-md
+                                  ${
+                                    configuratorState[currentStepData.id]?.valueId === value.id
+                                      ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50"
+                                      : "border-gray-200 hover:border-gray-300"
+                                  }
+                                `}
+                              >
+                                <div className="text-center">
+                                  <div
+                                    className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg mx-auto mb-2 border border-gray-300 shadow-sm"
+                                    style={{ backgroundColor: value.color || value.value }}
+                                  />
+                                  <div className="text-xs sm:text-sm font-medium text-gray-900 truncate leading-tight">
+                                    {value.name}
+                                  </div>
+                                  {value.price > 0 && (
+                                    <div className="text-xs text-green-600 font-semibold mt-1">+${value.price}</div>
+                                  )}
+                                </div>
+                                {/* Green checkmark for selected option */}
+                                {configuratorState[currentStepData.id]?.valueId === value.id && (
+                                  <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                                    <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                  </div>
                                 )}
                               </div>
-                              {/* Green checkmark for selected option - matches reference */}
-                              {configuratorState[currentStepData.id]?.valueId === value.id && (
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                  <Check className="w-3 h-3 text-white" />
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
 
-                      {/* Non-Color Options */}
+                      {/* Non-Color Options - Fully Responsive List Layout */}
                       {(currentStepData.type === "texture" || currentStepData.type === "component") && (
-                        <div className="space-y-3">
-                          {currentStepData.values.map((value) => (
-                            <div
-                              key={value.id}
-                              onClick={() =>
-                                selectOption(
-                                  currentStepData.id,
-                                  value.id,
-                                  value.price,
-                                  value.value,
-                                  value.color,
-                                  value.layerControls,
-                                )
-                              }
-                              className={`
-                                p-4 rounded-lg border-2 cursor-pointer transition-all
-                                ${
-                                  configuratorState[currentStepData.id]?.valueId === value.id
-                                    ? "border-blue-500 bg-blue-50 shadow-sm"
-                                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                        <div>
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
+                            Choose {currentStepData.name}
+                          </h3>
+                          <div className="space-y-3 sm:space-y-4">
+                            {currentStepData.values.map((value) => (
+                              <div
+                                key={value.id}
+                                onClick={() =>
+                                  selectOption(
+                                    currentStepData.id,
+                                    value.id,
+                                    value.price,
+                                    value.value,
+                                    value.color,
+                                    value.layerControls,
+                                  )
                                 }
-                              `}
-                            >
-                              <div className="flex items-center gap-3">
-                                {value.thumbnail && (
-                                  <img
-                                    src={value.thumbnail || "/placeholder.svg"}
-                                    alt={value.name}
-                                    className="w-12 h-12 rounded-lg object-cover border"
-                                  />
-                                )}
-                                {value.color && !value.thumbnail && (
-                                  <div
-                                    className="w-12 h-12 rounded-lg border-2 border-white shadow-sm"
-                                    style={{ backgroundColor: value.color }}
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm text-gray-900">{value.name}</div>
-                                  {value.price > 0 && (
-                                    <div className="text-green-600 font-semibold text-sm">+${value.price}</div>
+                                className={`
+                                  p-4 sm:p-5 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md
+                                  ${
+                                    configuratorState[currentStepData.id]?.valueId === value.id
+                                      ? "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200"
+                                      : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                                  }
+                                `}
+                              >
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                  {value.thumbnail ? (
+                                    <img
+                                      src={value.thumbnail}
+                                      alt={value.name}
+                                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg object-cover border flex-shrink-0 shadow-sm"
+                                    />
+                                  ) : value.color ? (
+                                    <div
+                                      className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg border-2 border-white shadow-sm flex-shrink-0"
+                                      style={{ backgroundColor: value.color }}
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-lg bg-gray-100 border flex items-center justify-center flex-shrink-0">
+                                      <span className="text-sm sm:text-base font-medium text-gray-600">
+                                        {value.name.charAt(0)}
+                                      </span>
+                                    </div>
                                   )}
-                                  {value.price === 0 && <div className="text-gray-500 text-xs">Included</div>}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm sm:text-base text-gray-900 truncate mb-1">
+                                      {value.name}
+                                    </div>
+                                    {value.price !== 0 && (
+                                      <div className={`font-semibold text-sm sm:text-base ${value.price > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {value.price > 0 ? '+' : ''}${Math.abs(value.price)}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {configuratorState[currentStepData.id]?.valueId === value.id && (
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                                      <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    </div>
+                                  )}
                                 </div>
-                                {configuratorState[currentStepData.id]?.valueId === value.id && (
-                                  <Check className="w-5 h-5 text-blue-500" />
-                                )}
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -780,43 +1053,110 @@ export function UniversalConfigurator({
             </AnimatePresence>
           </div>
 
-          {/* Sidebar Footer - Matches Reference */}
-          <div className="p-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} size="sm">
-                <ChevronLeft className="w-4 h-4 mr-1" />
+          {/* Sidebar Footer - Fully Responsive */}
+          <div className="p-4 sm:p-5 lg:p-6 border-t border-gray-200 bg-white">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Button 
+                variant="outline" 
+                onClick={prevStep} 
+                disabled={currentStep === 0} 
+                size="sm"
+                className="flex-1 h-10 sm:h-11 text-sm font-medium"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
 
               {currentStep < totalSteps - 1 ? (
-                <Button onClick={nextStep} size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+                <>
+                  <Button 
+                    onClick={nextStep} 
+                    size="sm" 
+                    className="bg-blue-600 hover:bg-blue-700 flex-1 h-10 sm:h-11 text-sm font-medium"
+                  >
+                    Next Step
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                  
+                  {/* Show Add to Cart option on non-measurement steps */}
+                  {!isMeasurementStep && (
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700 flex-1 h-10 sm:h-11 text-sm font-medium" 
+                      size="sm" 
+                      onClick={handleAddToCart}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Add to Cart
+                    </Button>
+                  )}
+                </>
               ) : (
-                <Button className="bg-green-600 hover:bg-green-700" size="sm" onClick={handleAddToCart}>
-                  <ShoppingCart className="w-4 h-4 mr-1" />
-                  Add to Cart
-                </Button>
+                <>
+                  {/* On measurement step, show Skip and Add to Cart */}
+                  {isMeasurementStep && (
+                    <Button 
+                      variant="outline"
+                      onClick={handleAddToCart} 
+                      size="sm" 
+                      className="flex-1 h-10 sm:h-11 text-sm font-medium"
+                    >
+                      Skip Measurements
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700 flex-1 h-10 sm:h-11 text-sm font-medium" 
+                    size="sm" 
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Add to Cart
+                  </Button>
+                </>
               )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT AREA - 3D MODEL + CONTROLS */}
-        <div className="flex-1 relative h-screen bg-gray-100">
-          {/* Top Controls */}
-          <div className="absolute top-0 right-0 z-10 p-6 flex items-center gap-2">
-            <Button variant="outline" size="sm" className="bg-white/90 backdrop-blur-sm">
-              <Maximize2 className="w-4 h-4" />
+        {/* Mobile Menu Button - Enhanced */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsSidebarOpen(true)}
+          className={`
+            fixed top-4 left-4 z-40 lg:hidden bg-white/95 backdrop-blur-sm shadow-lg border-gray-300
+            h-10 w-10 p-0 transition-all duration-200
+            ${isSidebarOpen ? 'hidden' : 'flex'}
+          `}
+        >
+          <Menu className="w-4 h-4" />
+        </Button>
+
+        {/* RIGHT AREA - 3D MODEL + CONTROLS - Fully Responsive */}
+        <div className={`
+          flex-1 relative h-screen bg-gradient-to-br from-gray-100 to-gray-200 transition-all duration-300
+          ${isSidebarOpen ? 'lg:ml-0' : ''}
+        `}>
+          {/* Top Controls - Responsive with better positioning */}
+          <div className="absolute top-3 sm:top-4 lg:top-6 right-3 sm:right-4 lg:right-6 z-10 flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/95 backdrop-blur-sm h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 p-0 shadow-lg hover:shadow-xl transition-all border-gray-300"
+            >
+              <Maximize2 className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
             </Button>
-            <Button variant="outline" size="sm" className="bg-white/90 backdrop-blur-sm">
-              <RotateCcw className="w-4 h-4" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/95 backdrop-blur-sm h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 p-0 shadow-lg hover:shadow-xl transition-all border-gray-300"
+            >
+              <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
             </Button>
           </div>
 
-          {/* 3D Model Viewer - FULL HEIGHT */}
-          <div className="absolute inset-0 w-full h-full">
+          {/* 3D Model Viewer - FULL HEIGHT with better styling */}
+          <div className="absolute inset-0 w-full h-full rounded-lg lg:rounded-none overflow-hidden">
             <ModelViewer
               modelUrl={getModelUrl()}
               customizations={generateCustomizations()}
@@ -824,11 +1164,31 @@ export function UniversalConfigurator({
             />
           </div>
 
-          {/* Bottom Instructions - Matches Reference */}
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-gray-600 shadow-lg">
-              Drag to rotate • Scroll to zoom • Double-click to reset view
+          {/* Bottom Instructions - More Responsive */}
+          <div className="absolute bottom-3 sm:bottom-4 lg:bottom-6 left-1/2 transform -translate-x-1/2 z-10 px-2 sm:px-4">
+            <div className="bg-white/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm text-gray-600 shadow-lg border border-gray-300 text-center max-w-sm sm:max-w-md">
+              <span className="hidden sm:inline">Drag to rotate • Scroll to zoom • Double-click to reset view</span>
+              <span className="sm:hidden">Tap & drag • Pinch to zoom</span>
             </div>
+          </div>
+
+          {/* Mobile Price Indicator */}
+          <div className="absolute top-3 left-3 lg:hidden z-10">
+            <div className="bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg text-sm shadow-lg border border-gray-300">
+              <div className="font-bold text-gray-900">${currentPrice.toFixed(2)}</div>
+            </div>
+          </div>
+
+          {/* Responsive Corner Indicators */}
+          <div className="absolute bottom-3 right-3 lg:hidden z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSidebarOpen(true)}
+              className="bg-white/95 backdrop-blur-sm h-10 w-10 p-0 shadow-lg border-gray-300"
+            >
+              <Package className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>

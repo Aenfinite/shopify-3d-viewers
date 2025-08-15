@@ -22,6 +22,7 @@ interface OrderSummary {
     sizeType: "standard" | "custom"
     standardSize?: string
     fitType?: string
+    customMeasurementMethod?: "videos" | "sketches"
     customMeasurements?: {
       neck: number
       chest: number
@@ -181,10 +182,12 @@ export function CheckoutModal({ isOpen, onClose, orderSummary }: CheckoutModalPr
 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm text-gray-600">
-                    Measurements: {orderSummary.measurementData.sizeType === "custom" ? "Custom" : "Standard"}
+                    Measurements: {orderSummary.measurementData.sizeType === "custom" ? "Custom Measurement" : "Standard"}
+                    {orderSummary.measurementData.sizeType === "custom" && orderSummary.measurementData.customMeasurementMethod && 
+                      ` (${orderSummary.measurementData.customMeasurementMethod === "videos" ? "Video Tutorial" : "Sketch Guide"})`}
                     {orderSummary.measurementData.standardSize &&
                       ` (${orderSummary.measurementData.standardSize.toUpperCase()})`}
-                    {orderSummary.measurementData.fitType && ` - ${orderSummary.measurementData.fitType}`}
+                    {orderSummary.measurementData.fitType && orderSummary.measurementData.sizeType === "standard" && ` - ${orderSummary.measurementData.fitType}`}
                   </span>
                   <span className="text-sm">
                     {orderSummary.measurementData.sizeType === "custom" ? "+$25.00" : "Included"}
